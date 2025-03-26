@@ -25,6 +25,9 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("apps.accounts.urls")),
     path("dashboard/", include("apps.dashboard.urls")),
+    path("targets/", include("apps.targets.urls")),
+    path("shops/", include("apps.shops.urls")),
+    path("reports/", include("apps.reports.urls")),
     # Redirect root to login page
     path("", RedirectView.as_view(pattern_name="accounts:login"), name="home"),
 ]
