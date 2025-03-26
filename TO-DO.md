@@ -31,7 +31,7 @@
 
 - [x] **Create Core Apps:**
     - [x] Navigate to the `apps/` directory.
-    - [x] Create initial apps using `python ../manage.py startapp <app_name>`:
+    - [x] Create initial apps using `python manage.py startapp <app_name> apps/<app_name>`:
         - [x] `accounts`
         - [x] `dashboard`
         - [x] `personas`
@@ -39,7 +39,7 @@
         - [x] `communications`
         - [x] `shops`
         - [x] `reports`
-    - [x] Add these apps to `INSTALLED_APPS` in `config/settings/base.py`, prefixing with `apps.` (e.g., `apps.accounts`).
+    - [x] Add the app configurations (e.g., `apps.accounts.apps.AccountsConfig`) to `INSTALLED_APPS` in `config/settings/base.py` *after* creating the apps.
 
 - [ ] **Set Up Dependency Management:**
     - [ ] Create `requirements/base.txt` (add `django`).
