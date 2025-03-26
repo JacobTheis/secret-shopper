@@ -57,13 +57,13 @@
     - [x] Create a `.env` file (and add it to `.gitignore`).
     - [x] Integrate `python-dotenv` to load `.env` in settings (install `python-dotenv`, add code to `manage.py` and `wsgi.py`/`asgi.py`).
 
-- [ ] **Integrate Celery:**
-    - [ ] Install Celery and a message broker (e.g., Redis: `pip install celery redis`).
-    - [ ] Create `config/celery.py` to define the Celery application instance.
-    - [ ] Import and load tasks in `config/__init__.py`.
-    - [ ] Configure Celery settings (broker URL, result backend, etc.) in `config/settings/base.py`.
-    - [ ] Add Celery worker command to project documentation/README.
+- [x] **Integrate Celery:**
+    - [x] Install Celery and a message broker (e.g., Redis: `pip install celery redis`).
+    - [x] Create `config/celery.py` to define the Celery application instance.
+    - [x] Import and load tasks in `config/__init__.py`.
+    - [x] Configure Celery settings (broker URL, result backend, etc.) in `config/settings/base.py`.
+    - [x] Add Celery worker command to project documentation/README.
 
-- [ ] **Initial Database Migration:**
-    - [ ] Run `python manage.py makemigrations`.
-    - [ ] Run `python manage.py migrate`.
+- [x] **Initial Database Migration:**
+    - [x] Run `python manage.py makemigrations`.
+    - [x] Run `python manage.py migrate`.
