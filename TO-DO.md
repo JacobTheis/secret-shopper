@@ -8,17 +8,17 @@
     - [x] Start the Django project (`django-admin startproject config .`).
     - [x] Verify the basic Django project runs (`python manage.py runserver`).
 
-- [ ] **Establish Project Structure:**
-    - [ ] Create the `apps/` directory.
-    - [ ] Create the `static/` directory and subdirectories (`css/`, `js/`, `images/`, `vendors/`).
-    - [ ] Create the `templates/` directory and subdirectories (`base.html`, `partials/`, `emails/`, `errors/`).
-    - [ ] Create the `media/` directory.
-    - [ ] Create the `utils/` directory.
-        - [ ] Create `utils/__init__.py`.
-        - [ ] Create `utils/ai_integration/` directory and `utils/ai_integration/__init__.py`.
-        - [ ] Create `utils/email/` directory and `utils/email/__init__.py`.
-        - [ ] Create `utils/validators.py`.
-    - [ ] Create the `requirements/` directory.
+- [x] **Establish Project Structure:**
+    - [x] Create the `apps/` directory.
+    - [x] Create the `static/` directory and subdirectories (`css/`, `js/`, `images/`, `vendors/`).
+    - [x] Create the `templates/` directory and subdirectories (`base.html`, `partials/`, `emails/`, `errors/`).
+    - [x] Create the `media/` directory.
+    - [x] Create the `utils/` directory.
+        - [x] Create `utils/__init__.py`.
+        - [x] Create `utils/ai_integration/` directory and `utils/ai_integration/__init__.py`.
+        - [x] Create `utils/email/` directory and `utils/email/__init__.py`.
+        - [x] Create `utils/validators.py`.
+    - [x] Create the `requirements/` directory.
 
 - [ ] **Configure Settings:**
     - [ ] Move the default `settings.py` into `config/settings/base.py`.
