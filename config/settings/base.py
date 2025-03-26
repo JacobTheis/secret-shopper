@@ -41,13 +41,13 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 
     # Local apps
-    # "apps.accounts.apps.AccountsConfig",
-    # "apps.dashboard.apps.DashboardConfig",
-    # "apps.personas.apps.PersonasConfig",
-    # "apps.targets.apps.TargetsConfig",
-    # "apps.communications.apps.CommunicationsConfig",
-    # "apps.shops.apps.ShopsConfig",
-    # "apps.reports.apps.ReportsConfig",
+    "apps.accounts.apps.AccountsConfig",
+    "apps.dashboard.apps.DashboardConfig",
+    "apps.personas.apps.PersonasConfig",
+    "apps.targets.apps.TargetsConfig",
+    "apps.communications.apps.CommunicationsConfig",
+    "apps.shops.apps.ShopsConfig",
+    "apps.reports.apps.ReportsConfig",
 ]
 
 MIDDLEWARE = [
