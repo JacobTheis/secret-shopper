@@ -20,14 +20,14 @@
         - [x] Create `utils/validators.py`.
     - [x] Create the `requirements/` directory.
 
-- [ ] **Configure Settings:**
-    - [ ] Move the default `settings.py` into `config/settings/base.py`.
-    - [ ] Create `config/settings/__init__.py`.
-    - [ ] Create `config/settings/development.py` (inheriting from `base.py`).
-    - [ ] Create `config/settings/production.py` (inheriting from `base.py`).
-    - [ ] Update `manage.py`, `config/wsgi.py`, and `config/asgi.py` to use the new settings structure (e.g., point to `config.settings.development` by default).
-    - [ ] Configure `STATIC_URL`, `STATICFILES_DIRS`, `MEDIA_URL`, `MEDIA_ROOT` in `config/settings/base.py`.
-    - [ ] Configure `TEMPLATES` setting in `config/settings/base.py` to include the global `templates` directory.
+- [x] **Configure Settings:**
+    - [x] Move the default `settings.py` into `config/settings/base.py`.
+    - [x] Create `config/settings/__init__.py`.
+    - [x] Create `config/settings/development.py` (inheriting from `base.py`).
+    - [x] Create `config/settings/production.py` (inheriting from `base.py`).
+    - [x] Update `manage.py`, `config/wsgi.py`, and `config/asgi.py` to use the new settings structure (e.g., point to `config.settings.development` by default).
+    - [x] Configure `STATIC_URL`, `STATICFILES_DIRS`, `MEDIA_URL`, `MEDIA_ROOT` in `config/settings/base.py`.
+    - [x] Configure `TEMPLATES` setting in `config/settings/base.py` to include the global `templates` directory.
 
 - [ ] **Create Core Apps:**
     - [ ] Navigate to the `apps/` directory.

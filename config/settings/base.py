@@ -10,10 +10,12 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import os # Add this import
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+# BASE_DIR = Path(__file__).resolve().parent.parent # Original when settings.py was in config/
+BASE_DIR = Path(__file__).resolve().parent.parent.parent # Project root (re-secret-shop/)
 
 
 # Quick-start development settings - unsuitable for production
@@ -54,7 +56,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"], # Add global templates directory
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -116,6 +118,20 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = "static/"
+# Define where Django should look for static files globally
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
+# STATIC_ROOT is where collectstatic will copy files for production.
+# Define it here or in production.py
+# STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+
+# Media files (User-uploaded content)
+# https://docs.djangoproject.com/en/5.1/topics/files/
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
