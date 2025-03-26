@@ -4,12 +4,16 @@ import os
 import sys
 
 
-import dotenv # Add this import
+import dotenv  # Add this import
+
+# Add project root to Python path
+BASE_DIR = Path(__file__).resolve().parent
+sys.path.append(str(BASE_DIR))
 
 def main():
     """Run administrative tasks."""
     # Load .env file
-    dotenv.load_dotenv() # Add this line
+    dotenv.load_dotenv()  # Add this line
 
     # Use DJANGO_SETTINGS_MODULE from .env or default to development
     settings_module = os.environ.get("DJANGO_SETTINGS_MODULE", "config.settings.development")
