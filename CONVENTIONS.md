@@ -1,5 +1,9 @@
 # Secret Shopper Development Guidelines
 
+> [!important] Virtual Environment
+> All shell commands provided assume you are operating within the project's root directory.
+> You **MUST** prefix any suggested shell command with `source venv/bin/activate && ` to ensure it runs within the correct virtual environment context. For example, if the suggestion is `python manage.py runserver`, you should run `source venv/bin/activate && python manage.py runserver`.
+
 ## Commands
 - Start server: `source venv/bin/activate && python manage.py runserver`
 - Run tests: `source venv/bin/activate && python manage.py test`
