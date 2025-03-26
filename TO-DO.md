@@ -52,10 +52,10 @@
     - [x] Create a `.gitignore` file. Ask me to add the standard Python/Django `.gitignore` content if needed.
     - [x] Make the initial commit.
 
-- [ ] **Set Up Environment Configuration:**
-    - [ ] Create a `.env.example` file outlining necessary environment variables (e.g., `SECRET_KEY`, `DEBUG`, `DATABASE_URL`).
-    - [ ] Create a `.env` file (and add it to `.gitignore`).
-    - [ ] Integrate `python-dotenv` to load `.env` in settings (install `python-dotenv`, add code to `manage.py` and `wsgi.py`/`asgi.py`).
+- [x] **Set Up Environment Configuration:**
+    - [x] Create a `.env.example` file outlining necessary environment variables (e.g., `SECRET_KEY`, `DEBUG`, `DATABASE_URL`).
+    - [x] Create a `.env` file (and add it to `.gitignore`).
+    - [x] Integrate `python-dotenv` to load `.env` in settings (install `python-dotenv`, add code to `manage.py` and `wsgi.py`/`asgi.py`).
 
 - [ ] **Integrate Celery:**
     - [ ] Install Celery and a message broker (e.g., Redis: `pip install celery redis`).
