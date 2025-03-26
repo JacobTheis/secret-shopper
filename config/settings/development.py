@@ -21,3 +21,16 @@ ALLOWED_HOSTS = []
 
 print("DEBUG:", DEBUG)
 print("Loading development settings")
+
+import os
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("DB_NAME", "secret_shop_dev"),
+        "USER": os.getenv("DB_USER", "secret_shop_user"),
+        "PASSWORD": os.getenv("DB_PASSWORD", "dev_password"),
+        "HOST": os.getenv("DB_HOST", "db"),
+        "PORT": os.getenv("DB_PORT", "5432"),
+    }
+}
