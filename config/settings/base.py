@@ -10,12 +10,13 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
-import os # Add this import
+import os  # Add this import
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # BASE_DIR = Path(__file__).resolve().parent.parent # Original when settings.py was in config/
-BASE_DIR = Path(__file__).resolve().parent.parent.parent # Project root (re-secret-shop/)
+# Project root (re-secret-shop/)
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 # Quick-start development settings - unsuitable for production
@@ -44,7 +45,7 @@ INSTALLED_APPS = [
     "apps.accounts.apps.AccountsConfig",
     "apps.dashboard.apps.DashboardConfig",
     "apps.personas.apps.PersonasConfig",
-    "apps.targets.apps.TargetsConfig", 
+    "apps.targets.apps.TargetsConfig",
     "apps.communications.apps.CommunicationsConfig",
     "apps.shops.apps.ShopsConfig",
     "apps.reports.apps.ReportsConfig",
@@ -65,7 +66,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"], # Add global templates directory
+        "DIRS": [BASE_DIR / "templates"],  # Add global templates directory
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
