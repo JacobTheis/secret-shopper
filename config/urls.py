@@ -16,8 +16,26 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
+from django.views.generic import RedirectView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("accounts/", include("apps.accounts.urls")),
+    path("dashboard/", include("apps.dashboard.urls")),
+    # Redirect root to login page
+    path("", RedirectView.as_view(pattern_name="accounts:login"), name="home"),
 ]
+
+# Add Django's authentication views for password reset, etc.
+# Not including as a namespace to maintain Django's default names
+urlpatterns += [
+    path('accounts/', include('django.contrib.auth.urls')),
+]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

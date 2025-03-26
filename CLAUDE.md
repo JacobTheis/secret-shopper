@@ -23,7 +23,7 @@
 Always run in virtual environment with `source venv/bin/activate && [command]`
 
 
-## Project Structure
+## Basic Project Structure
 
 ```
 re-secret-shop/
