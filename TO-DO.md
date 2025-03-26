@@ -29,17 +29,17 @@
     - [x] Configure `STATIC_URL`, `STATICFILES_DIRS`, `MEDIA_URL`, `MEDIA_ROOT` in `config/settings/base.py`.
     - [x] Configure `TEMPLATES` setting in `config/settings/base.py` to include the global `templates` directory.
 
-- [ ] **Create Core Apps:**
-    - [ ] Navigate to the `apps/` directory.
-    - [ ] Create initial apps using `python manage.py startapp <app_name> apps/<app_name>`:
-        - [ ] `accounts`
-        - [ ] `dashboard`
-        - [ ] `personas`
-        - [ ] `targets`
-        - [ ] `communications`
-        - [ ] `shops`
-        - [ ] `reports`
-    - [ ] Add the app configurations (e.g., `apps.accounts.apps.AccountsConfig`) to `INSTALLED_APPS` in `config/settings/base.py` *after* creating the apps.
+- [x] **Create Core Apps:**
+    - [x] Navigate to the `apps/` directory.
+    - [x] Create initial apps using `python manage.py startapp <app_name> apps/<app_name>`:
+        - [x] `accounts`
+        - [x] `dashboard`
+        - [x] `personas`
+        - [x] `targets`
+        - [x] `communications`
+        - [x] `shops`
+        - [x] `reports`
+    - [x] Add the app configurations (e.g., `apps.accounts.apps.AccountsConfig`) to `INSTALLED_APPS` in `config/settings/base.py` *after* creating the apps.
 
 - [ ] **Set Up Dependency Management:**
     - [ ] Create `requirements/base.txt` (add `django`).
