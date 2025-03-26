@@ -13,7 +13,11 @@
     - [ ] Create the `static/` directory and subdirectories (`css/`, `js/`, `images/`, `vendors/`).
     - [ ] Create the `templates/` directory and subdirectories (`base.html`, `partials/`, `emails/`, `errors/`).
     - [ ] Create the `media/` directory.
-    - [ ] Create the `utils/` directory and subdirectories (`ai_integration/`, `email/`).
+    - [ ] Create the `utils/` directory.
+        - [ ] Create `utils/__init__.py`.
+        - [ ] Create `utils/ai_integration/` directory and `utils/ai_integration/__init__.py`.
+        - [ ] Create `utils/email/` directory and `utils/email/__init__.py`.
+        - [ ] Create `utils/validators.py`.
     - [ ] Create the `requirements/` directory.
 
 - [ ] **Configure Settings:**
