@@ -47,10 +47,10 @@
     - [ ] Create `requirements/production.txt` (add `-r base.txt`, production server like `gunicorn`).
     - [ ] Install development requirements (`pip install -r requirements/development.txt`).
 
-- [ ] **Initialize Version Control:**
-    - [ ] Initialize a git repository (`git init`).
-    - [ ] Create a `.gitignore` file. Ask me to add the standard Python/Django `.gitignore` content if needed.
-    - [ ] Make the initial commit.
+- [x] **Initialize Version Control:**
+    - [x] Initialize a git repository (`git init`).
+    - [x] Create a `.gitignore` file. Ask me to add the standard Python/Django `.gitignore` content if needed.
+    - [x] Make the initial commit.
 
 - [ ] **Set Up Environment Configuration:**
     - [ ] Create a `.env.example` file outlining necessary environment variables (e.g., `SECRET_KEY`, `DEBUG`, `DATABASE_URL`).
