@@ -41,11 +41,11 @@
         - [x] `reports`
     - [x] Add the app configurations (e.g., `apps.accounts.apps.AccountsConfig`) to `INSTALLED_APPS` in `config/settings/base.py` *after* creating the apps.
 
-- [ ] **Set Up Dependency Management:**
-    - [ ] Create `requirements/base.txt` (add `django`).
-    - [ ] Create `requirements/development.txt` (add `-r base.txt`, linters like `flake8`, type checkers like `mypy`).
-    - [ ] Create `requirements/production.txt` (add `-r base.txt`, production server like `gunicorn`).
-    - [ ] Install development requirements (`pip install -r requirements/development.txt`).
+- [x] **Set Up Dependency Management:**
+    - [x] Create `requirements/base.txt` (add `django`).
+    - [x] Create `requirements/development.txt` (add `-r base.txt`, linters like `flake8`, type checkers like `mypy`).
+    - [x] Create `requirements/production.txt` (add `-r base.txt`, production server like `gunicorn`).
+    - [x] Install development requirements (`pip install -r requirements/development.txt`).
 
 - [x] **Initialize Version Control:**
     - [x] Initialize a git repository (`git init`).
