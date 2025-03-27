@@ -47,7 +47,6 @@ body {
 /* Dashboard styles */
 .dashboard-container {
     display: flex;
-    min-height: 100vh;
 }
 
 .sidebar {
@@ -93,7 +92,7 @@ body {
 .main-content {
     flex: 1;
     padding: 2rem;
-    margin-left: 50px;
+    margin-left: 150px;
 }
 
 .dashboard-widgets {
