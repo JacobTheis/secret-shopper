@@ -28,7 +28,7 @@ class OpenAIClient:
                           temperature: float = 1,
                           max_tokens: int = 5000,
                           tools: Optional[List[str]] = [],
-                          tool_choice: Optional[str] = []
+                          tool_choice: Optional[str] = {}
                           ) -> str:
         """Generate a text response from the AI.
 
