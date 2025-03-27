@@ -43,6 +43,19 @@
 | Target Retrieval   | Retrieve the target from the database or file                                                                              |
 | Targets Gathering  | Gather information about the target automatically                                                                           |
 
+#### Target Model
+
+The target will be created by the user. It will consist of the following information:
+- Name
+- Street Address
+- City
+- State
+- Zip
+- Phone Number
+- Email Address
+- Website
+- Owner(s)
+- Property Manager
 
 ### Secret Shop Communication and Data Gathering
 
@@ -55,6 +68,10 @@
 | Parse response     | Parse the response from the agent                                                                                          |
 | Follow up          | Follow up with the agent to gather more information if data is missing                                                     |
 
+#### Shop Model
+
+The shop will consist of the following information:
+- target_id (Foreign Key to the target)
 
 
 ### Data processing and assessment
