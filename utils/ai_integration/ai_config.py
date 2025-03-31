@@ -11,7 +11,7 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
         'strict': True,
         'schema': {
             'type': 'object',
-            'properties': {
+            'community': {
                 'name': {
                     'type': 'string',
                     'description': 'The name of the community'

@@ -72,6 +72,223 @@ The target will be created by the user. It will consist of the following informa
 
 The shop will consist of the following information:
 - target_id (Foreign Key to the target)
+- start_time
+- end_time
+- status (in progress, completed, failed)
+
+##### Secret Shop Summary Results Model
+
+This will be a summary of the results of the shop. It will consist of the following:
+
+- secret_shop_id
+- community_names
+- community_overview
+- community_url
+- application_fee
+- administration_fee
+- membership_fee
+- pet_policy
+- community_pages              # List of all community pages on the site being scraped
+  - page_name
+  - page_overview
+  - page_url
+- floor_plans                  # List of all floor plans available in the community    
+  - floor_plan_name
+  - floor_plan_beds
+  - floor_plan_baths
+  - floor_plan_url
+  - floor_plan_sqft
+  - floor_plan_type
+  - floor_plan_min_rental_price
+  - floor_plan_max_rental_price
+  - floor_plan_security_deposit
+  - floor_plan_amenities
+- community_amenities         # List of all community amenities available in the community
+  - amenity_name
+  - amenity_description
+
+
+*This is the result schema for the AI info gathering*
+```
+STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
+    'format': {
+        'type': 'json_schema',
+        'name': 'community',
+        'strict': True,
+        'schema': {
+            'type': 'object',
+            'community': {
+                'name': {
+                    'type': 'string',
+                    'description': 'The name of the community'
+                },
+                'overview': {
+                    'type': 'string',
+                    'description': 'A brief summary or description of the community.'
+                },
+                'url': {
+                    'type': 'string',
+                    'description': 'The link to the community homepage or relevant page.'
+                },
+                'application_fee': {
+                    'type': 'number',
+                    'description': 'The fee charged to prospects for applying to live in the community.'
+                },
+                'administration_fee': {
+                    'type': 'number',
+                    'description': 'The one time fee charged to prospects for administrative purposes.'
+                },
+                'membership_fee': {
+                    'type': 'number',
+                    'description': 'The recurring fee charged to residents for membership in the community. Sometimes called a resident benefits package or amenity package.'
+                },
+                'pet_policy': {
+                    'type': 'number',
+                    'description': 'The community policy and fees on pets.'
+                },
+                'community_pages': {
+                    'type': 'array',
+                    'description': 'A list of pages associated with the community.',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'name': {
+                                'type': 'string',
+                                'description': 'The name of the page.'
+                            },
+                            'overview': {
+                                'type': 'string',
+                                'description': 'A brief overview or description of the page and user experience.'
+                            },
+                            'url': {
+                                'type': 'string',
+                                'description': 'The URL for the page.'
+                            }
+                        },
+                        'required': [
+                            'name',
+                            'overview',
+                            'url'
+                        ],
+                        'additionalProperties': False
+                    }
+                },
+                'floor_plans': {
+                    'type': 'array',
+                    'description': 'A list of all floor plans available in the community.',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'name': {
+                                'type': 'string',
+                                'description': 'The name of the floor plan.'
+                            },
+                            'beds': {
+                                'type': 'number',
+                                'description': 'The number of bedrooms in the floor plan.'
+                            },
+                            'baths': {
+                                'type': 'number',
+                                'description': 'The number of bathrooms in the floor plan.'
+                            },
+                            'url': {
+                                'type': 'string',
+                                'description': 'The URL for the floor plan.'
+                            },
+                            'sqft': {
+                                'type': 'number',
+                                'description': 'The square footage of the floor plan.'
+                            },
+                            'type': {
+                                'type': 'string',
+                                'description': 'The type of unit (e.g. apartment, townhome, etc.).'
+                            },
+                            'min_rental_price': {
+                                'type': 'number',
+                                'description': 'The minimum rental price of the floor plan.'
+                            },
+                            'max_rental_price': {
+                                'type': 'number',
+                                'description': 'The maximum rental price of the floor plan.'
+                            },
+                            'security_deposit': {
+                                'type': 'number',
+                                'description': 'The security deposit required for the floor plan.'
+                            },
+                            'floor_plan_amenities': {
+                                'type': 'array',
+                                'description': 'A list of amenities available in the floor plan.',
+                                'items': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'amenity': {
+                                            'type': 'string',
+                                            'description': 'The name or description of the amenity.'
+                                        }
+                                    },
+                                    'required': [
+                                        'amenity'
+                                    ],
+                                    'additionalProperties': False
+                                }
+                            }
+                        },
+                        'required': [
+                            'name',
+                            'beds',
+                            'baths',
+                            'url',
+                            'sqft',
+                            'type',
+                            'min_rental_price',
+                            'max_rental_price',
+                            'security_deposit',
+                            'floor_plan_amenities'
+                        ],
+                        'additionalProperties': False
+                    }
+                },
+                'community_amenities': {
+                    'type': 'array',
+                    'description': 'A list of amenities available in the community.',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'amenity': {
+                                'type': 'string',
+                                'description': 'The name or description of the amenity.'
+                            }
+                        },
+                        'required': [
+                            'amenity'
+                        ],
+                        'additionalProperties': False
+                    }
+                }
+            },
+            'required': [
+                'name',
+                'overview',
+                'url',
+                'application_fee',
+                'administration_fee',
+                'membership_fee',
+                'pet_policy',
+                'community_pages',
+                'community_amenities',
+                'floor_plans'
+            ],
+            'additionalProperties': False
+        }
+    }
+}
+
+
+
+```
+
+##### Secret Shop Email Communications Model
+
 
 
 ### Data processing and assessment
