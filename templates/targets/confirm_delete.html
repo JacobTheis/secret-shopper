@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete {{ target.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h2>Confirm Deletion</h2>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Are you sure you want to delete the target property <strong>{{ target.name }}</strong>?</p>
+                    <p>This action cannot be undone. All data associated with this target will be permanently removed.</p>
+                    
+                    <div class="alert alert-warning">
+                        <strong>Property details:</strong>
+                        <ul class="mb-0">
+                            <li>Address: {{ target.street_address }}</li>
+                            <li>City: {{ target.city }}, {{ target.state }} {{ target.zip_code }}</li>
+                            {% if target.property_manager %}
+                                <li>Property Manager: {{ target.property_manager }}</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'targets:detail' target.id %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

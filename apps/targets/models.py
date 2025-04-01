@@ -21,7 +21,10 @@ class Target(models.Model):
     website = models.URLField(
         _("Website"), max_length=200, blank=True, null=True)
     owners = models.TextField(
-        _("Owner(s)"), blank=True, null=True, help_text=_("Names or details of owners")
+        _("Owner(s)"),
+        blank=True,
+        null=True,
+        help_text=_("Names or details of owners")
     )
     property_manager = models.CharField(
         _("Property Manager"), max_length=255, blank=True, null=True

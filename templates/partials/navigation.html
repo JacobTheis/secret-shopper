@@ -3,22 +3,22 @@
         <h1>Secret Shop</h1>
     </div>
     <ul class="nav flex-column">
-        <li class="nav-item {% if request.resolver_match.url_name == 'index' %}active{% endif %}">
+        <li class="nav-item {% if 'dashboard' in request.path %}active{% endif %}">
             <a class="nav-link" href="{% url 'dashboard:index' %}">
                 Dashboard
             </a>
         </li>
-        <li class="nav-item">
+        <li class="nav-item {% if 'targets' in request.path %}active{% endif %}">
             <a class="nav-link" href="{% url 'targets:index' %}">
                 Targets
             </a>
         </li>
-        <li class="nav-item">
+        <li class="nav-item {% if 'shops' in request.path %}active{% endif %}">
             <a class="nav-link" href="{% url 'shops:index' %}">
                 Shops
             </a>
         </li>
-        <li class="nav-item">
+        <li class="nav-item {% if 'reports' in request.path %}active{% endif %}">
             <a class="nav-link" href="{% url 'reports:index' %}">
                 Reports
             </a>
