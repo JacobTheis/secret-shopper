@@ -12,11 +12,11 @@
         <nav>
             <ul>
                 <li class="active"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-                <li><a href="#">Personas</a></li>
-                <li><a href="#">Targets</a></li>
-                <li><a href="#">Shops</a></li>
-                <li><a href="#">Reports</a></li>
-                <li><a href="#">Communications</a></li>
+                <li><a href="{% url 'personas:index' %}">Personas</a></li>
+                <li><a href="{% url 'targets:index' %}">Targets</a></li>
+                <li><a href="{% url 'shops:index' %}">Shops</a></li>
+                <li><a href="{% url 'reports:index' %}">Reports</a></li>
+                <li><a href="{% url 'communications:index' %}">Communications</a></li>
                 <li>
                     <form method="post" action="{% url 'accounts:logout' %}" id="logout-form" style="margin: 0;">
                         {% csrf_token %}
