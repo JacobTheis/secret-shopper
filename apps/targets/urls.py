@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 
+app_name = 'targets'
+
 urlpatterns = [
     # Main listing page
     path('', views.TargetsView.as_view(), name='index'),
