@@ -33,6 +33,18 @@
 | Persona Storage    | Store the persona in a database or file                                                                                    |
 | Persona Retrieval  | Retrieve the persona from the database or file                                                                             |
 
+#### Persona Model
+
+The persona will be created by the user. It will consist of the following information:
+- First Name
+- Last Name
+- Email Address
+- Rental Budget
+- Rental Preferences
+- Pets
+- Credit Score
+- Monthly Income
+
 
 ### Target Definition
 
@@ -80,7 +92,7 @@ The shop will consist of the following information:
 
 This will be a summary of the results of the shop. It will consist of the following:
 
-- secret_shop_id
+- secret_shop_id (Foreign Key to the shop)
 - community_names
 - community_overview
 - community_url
@@ -290,6 +302,15 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
 ##### Secret Shop Email Communications Model
 
 
+This will be how the email communications are stored. It will consist of the following:
+- secret_shop_id (Foreign Key to the shop)
+- persona_id (Foreign Key to the persona)
+- email_id (Foreign Key to the email)
+- email_type (inquiry, followup, response)
+- email_body
+- email_subject
+- email_from
+- email_to
 
 ### Data processing and assessment
 
@@ -302,10 +323,6 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
 
 
 ### Reporting
-
-| Name               | Description                                                                                                                |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| TBD                |                                                                                                                            |
 
 
 
