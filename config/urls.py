@@ -23,11 +23,11 @@ from django.views.generic import RedirectView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("accounts/", include("apps.accounts.urls")),
-    path("dashboard/", include("apps.dashboard.urls")),
-    path("targets/", include("apps.targets.urls")),
-    path("shops/", include("apps.shops.urls")),
-    path("reports/", include("apps.reports.urls")),
+    path("accounts/", include("apps.accounts.urls", namespace="accounts")),
+    path("dashboard/", include("apps.dashboard.urls", namespace="dashboard")),
+    path("targets/", include("apps.targets.urls", namespace="targets")),
+    path("shops/", include("apps.shops.urls", namespace="shops")),
+    path("reports/", include("apps.reports.urls", namespace="reports")),
     # Redirect root to login page
     path("", RedirectView.as_view(pattern_name="accounts:login"), name="home"),
 ]
@@ -40,5 +40,7 @@ urlpatterns += [
 
 # Serve media files in development
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL,
+                          document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL,
+                          document_root=settings.STATIC_ROOT)
