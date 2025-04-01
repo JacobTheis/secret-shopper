@@ -1,9 +1,6 @@
 from django.urls import path
 from . import views
 
-# Keep the app_name consistent with the URL pattern in config/urls.py
-app_name = 'apps.targets'
-
 urlpatterns = [
     # Main listing page
     path('', views.TargetsView.as_view(), name='index'),
