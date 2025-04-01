@@ -21,15 +21,19 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import RedirectView
 
-# Add Django's authentication views first
-# Not including as a namespace to maintain Django's default names
+# Include custom accounts views first to override defaults
 urlpatterns = [
+    path("accounts/", include("apps.accounts.urls", namespace="accounts")),
+]
+
+# Include default auth views (for password reset, etc.)
+urlpatterns += [
     path('accounts/', include('django.contrib.auth.urls')),
 ]
 
 urlpatterns += [
     path("admin/", admin.site.urls),
-    path("accounts/", include("apps.accounts.urls", namespace="accounts")), # Custom views override defaults if names match within namespace
+    # Note: The custom accounts path is already included above
     path("dashboard/", include("apps.dashboard.urls", namespace="dashboard")),
     path("targets/", include("apps.targets.urls", namespace="targets")),
     path("shops/", include("apps.shops.urls", namespace="shops")),
