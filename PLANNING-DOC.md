@@ -38,13 +38,15 @@
 The persona will be created by the user. It will consist of the following information:
 - First Name
 - Last Name
-- Email Address
 - Rental Budget
-- Rental Preferences
-- Pets
+- Desired bedrooms
+- Desired Bathrooms
+- Rental Preferences (text description)
+- Pets (text description)
 - Credit Score
 - Monthly Income
-
+- Additional Occupants
+- Rental History
 
 ### Target Definition
 
