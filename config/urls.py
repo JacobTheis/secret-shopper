@@ -34,6 +34,7 @@ urlpatterns += [
 urlpatterns += [
     path("admin/", admin.site.urls),
     # Note: The custom accounts path is already included above
+    path("personas/", include("apps.personas.urls", namespace="personas")),
     path("dashboard/", include("apps.dashboard.urls", namespace="dashboard")),
     path("targets/", include("apps.targets.urls", namespace="targets")),
     path("shops/", include("apps.shops.urls", namespace="shops")),
@@ -44,7 +45,15 @@ urlpatterns += [
 
 # Serve media files in development
 if settings.DEBUG:
+    # Serve media files during development
     urlpatterns += static(settings.MEDIA_URL,
                           document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL,
-                          document_root=settings.STATIC_ROOT)
+    # Note: Static files are served automatically by django.contrib.staticfiles
+    # when DEBUG=True. No need to add static(settings.STATIC_URL, ...) here.
+
+if settings.DEBUG:
+    # Serve media files during development
+    urlpatterns += static(settings.MEDIA_URL,
+                          document_root=settings.MEDIA_ROOT)
+    # Note: Static files are served automatically by django.contrib.staticfiles
+    # when DEBUG=True. No need to add static(settings.STATIC_URL, ...) here.
