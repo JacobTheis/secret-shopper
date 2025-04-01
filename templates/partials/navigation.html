@@ -1,42 +1,33 @@
-<nav class="sidebar">
+<div class="sidebar">
     <div class="logo">
-        <h1>Secret Shop</h1>
+        <h2>Secret Shop</h2>
     </div>
-    <ul class="nav flex-column">
-        <li class="nav-item {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}">
-            <a class="nav-link" href="{% url 'dashboard:index' %}">
-                Dashboard
-            </a>
-        </li>
-        <li class="nav-item {% if request.resolver_match.app_name == 'targets' %}active{% endif %}">
-            <a class="nav-link" href="{% url 'targets:index' %}">
-                Targets
-            </a>
-        </li>
-        <li class="nav-item {% if request.resolver_match.app_name == 'personas' %}active{% endif %}">
-            <a class="nav-link" href="{% url 'personas:index' %}">
-                Personas
-            </a>
-        </li>
-        <li class="nav-item {% if request.resolver_match.app_name == 'communications' %}active{% endif %}">
-            <a class="nav-link" href="{% url 'communications:index' %}">
-                Communications
-            </a>
-        </li>
-        <li class="nav-item {% if request.resolver_match.app_name == 'shops' %}active{% endif %}">
-            <a class="nav-link" href="{% url 'shops:index' %}">
-                Shops
-            </a>
-        </li>
-        <li class="nav-item {% if request.resolver_match.app_name == 'reports' %}active{% endif %}">
-            <a class="nav-link" href="{% url 'reports:index' %}">
-                Reports
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'accounts:logout' %}">
-                Logout
-            </a>
-        </li>
-    </ul>
-</nav>
+    <nav>
+        <ul>
+            <li class="{% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}">
+                <a href="{% url 'dashboard:index' %}">Dashboard</a>
+            </li>
+            <li class="{% if request.resolver_match.app_name == 'personas' %}active{% endif %}">
+                <a href="{% url 'personas:index' %}">Personas</a>
+            </li>
+            <li class="{% if request.resolver_match.app_name == 'targets' %}active{% endif %}">
+                <a href="{% url 'targets:index' %}">Targets</a>
+            </li>
+            <li class="{% if request.resolver_match.app_name == 'shops' %}active{% endif %}">
+                <a href="{% url 'shops:index' %}">Shops</a>
+            </li>
+            <li class="{% if request.resolver_match.app_name == 'reports' %}active{% endif %}">
+                <a href="{% url 'reports:index' %}">Reports</a>
+            </li>
+            <li class="{% if request.resolver_match.app_name == 'communications' %}active{% endif %}">
+                <a href="{% url 'communications:index' %}">Communications</a>
+            </li>
+            <li>
+                <form method="post" action="{% url 'accounts:logout' %}" id="logout-form" style="margin: 0;">
+                    {% csrf_token %}
+                    <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" style="display: block; padding: 0.5rem 1rem;">Logout</a>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</div>

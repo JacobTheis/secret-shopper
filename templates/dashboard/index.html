@@ -4,61 +4,35 @@
 {% block title %}Dashboard | Secret Shop{% endblock %}
 
 {% block content %}
-<div class="dashboard-container">
-    <div class="sidebar">
-        <div class="logo">
-            <h2>Secret Shop</h2>
+<h1>Dashboard</h1>
+<p>Welcome, {{ user.first_name }}!</p>
+
+<div class="dashboard-widgets">
+    <div class="widget">
+        <h3>Active Shops</h3>
+        <div class="widget-content">
+            <p>No active shops yet.</p>
         </div>
-        <nav>
-            <ul>
-                <li class="active"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-                <li><a href="{% url 'personas:index' %}">Personas</a></li>
-                <li><a href="{% url 'targets:index' %}">Targets</a></li>
-                <li><a href="{% url 'shops:index' %}">Shops</a></li>
-                <li><a href="{% url 'reports:index' %}">Reports</a></li>
-                <li><a href="{% url 'communications:index' %}">Communications</a></li>
-                <li>
-                    <form method="post" action="{% url 'accounts:logout' %}" id="logout-form" style="margin: 0;">
-                        {% csrf_token %}
-                        <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" style="display: block; padding: 0.5rem 1rem;">Logout</a>
-                    </form>
-                </li>
-            </ul>
-        </nav>
     </div>
     
-    <div class="main-content">
-        <h1>Dashboard</h1>
-        <p>Welcome, {{ user.first_name }}!</p>
-        
-        <div class="dashboard-widgets">
-            <div class="widget">
-                <h3>Active Shops</h3>
-                <div class="widget-content">
-                    <p>No active shops yet.</p>
-                </div>
-            </div>
-            
-            <div class="widget">
-                <h3>Recent Reports</h3>
-                <div class="widget-content">
-                    <p>No reports yet.</p>
-                </div>
-            </div>
-            
-            <div class="widget">
-                <h3>My Personas</h3>
-                <div class="widget-content">
-                    <p>No personas created yet.</p>
-                </div>
-            </div>
-            
-            <div class="widget">
-                <h3>Target Properties</h3>
-                <div class="widget-content">
-                    <p>No target properties yet.</p>
-                </div>
-            </div>
+    <div class="widget">
+        <h3>Recent Reports</h3>
+        <div class="widget-content">
+            <p>No reports yet.</p>
+        </div>
+    </div>
+    
+    <div class="widget">
+        <h3>My Personas</h3>
+        <div class="widget-content">
+            <p>No personas created yet.</p>
+        </div>
+    </div>
+    
+    <div class="widget">
+        <h3>Target Properties</h3>
+        <div class="widget-content">
+            <p>No target properties yet.</p>
         </div>
     </div>
 </div>
