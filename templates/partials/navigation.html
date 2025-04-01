@@ -18,6 +18,11 @@
                 Personas
             </a>
         </li>
+        <li class="nav-item {% if request.resolver_match.app_name == 'communications' %}active{% endif %}">
+            <a class="nav-link" href="{% url 'communications:index' %}">
+                Communications
+            </a>
+        </li>
         <li class="nav-item {% if request.resolver_match.app_name == 'shops' %}active{% endif %}">
             <a class="nav-link" href="{% url 'shops:index' %}">
                 Shops

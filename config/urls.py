@@ -37,6 +37,7 @@ urlpatterns += [
     path("personas/", include("apps.personas.urls", namespace="personas")),
     path("dashboard/", include("apps.dashboard.urls", namespace="dashboard")),
     path("targets/", include("apps.targets.urls", namespace="targets")),
+    path("communications/", include("apps.communications.urls", namespace="communications")),
     path("shops/", include("apps.shops.urls", namespace="shops")),
     path("reports/", include("apps.reports.urls", namespace="reports")),
     # Redirect root to login page
