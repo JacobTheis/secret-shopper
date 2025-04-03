@@ -123,8 +123,8 @@ This will be a summary of the results of the shop. It will consist of the follow
 
 
 *This is the result schema for the AI info gathering*
-```
-STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
+```json
+{
     "format": {
         "type": "json_schema",
         "name": "community",
@@ -132,63 +132,67 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
         "schema": {
             "type": "object",
             "community": {
-              "name": {
-                  "type": "string",
-                  "description": "The name of the community"
-              },
-              "overview": {
-                  "type": "string",
-                  "description": "A brief summary or description of the community."
-              },
-              "url": {
-                  "type": "string",
-                  "description": "The link to the community"s homepage or relevant page."
-              },
-              "application_fee": {
-                  "type": "number",
-                  "description": "The fee charged to prospects for applying to live in the community."
-              },
-              "application_fee_source": {
-                  "type": "string",
-                  "description": "The source url of the application fee. This is usually a link to the payment processor."
-              },
-              "administration_fee": {
-                  "type": "number",
-                  "description": "The one time fee charged to prospects for administrative purposes."
-              },
-              "administration_fee_source": {
-                  "type": "string",
-                  "description": "The source url of the administration fee. This is usually a link to the payment processor."
-              },
-              "membership_fee": {
-                  "type": "number",
-                  "description": "The recurring fee charged to residents for membership in the community. Sometimes called a resident benefits package or amenity package."
-              },
-              "membership_fee_source": {
-                  "type": "string",
-                  "description": "The source url of the membership fee. This is usually a link to the payment processor."
-              },
-              "pet_policy": {
-                  "type": "string",
-                  "description": "The community"s policy and fees on pets."
-              },
-              "pet_policy_source": {
-                  "type": "string",
-                  "description": "The source url of the pet policy. This is usually a link to the community"s pet policy page."
-              },
-              "self_showings": {
-                  "type": "boolean",
-                  "description": "Whether the community offers self-showings."
-              },
-              "self_showings_source": {
-                  "type": "string",
-                  "description": "The source url of the self-showings. This is usually a link to the community"s self-showing page."
-              },
-              "office_hours": {
-                  "type": "string",
-                  "description": "The office hours of the community."
-              },
-              "community_pages": {
+                "name": {
+                    "type": "string",
+                    "description": "The name of the community"
+                },
+                "overview": {
+                    "type": "string",
+                    "description": "A brief summary or description of the community."
+                },
+                "url": {
+                    "type": "string",
+                    "description": "The link to the community's homepage or relevant page."
+                },
+                "application_fee": {
+                    "type": "number",
+                    "description": "The fee charged to prospects for applying to live in the community."
+                },
+                "application_fee_source": {
+                    "type": "string",
+                    "description": "The source url of the application fee. This is usually a link to the payment processor."
+                },
+                "administration_fee": {
+                    "type": "number",
+                    "description": "The one time fee charged to prospects for administrative purposes."
+                },
+                "administration_fee_source": {
+                    "type": "string",
+                    "description": "The source url of the administration fee. This is usually a link to the payment processor."
+                },
+                "membership_fee": {
+                    "type": "number",
+                    "description": "The recurring fee charged to residents for membership in the community. Sometimes called a resident benefits package or amenity package."
+                },
+                "membership_fee_source": {
+                    "type": "string",
+                    "description": "The source url of the membership fee. This is usually a link to the payment processor."
+                },
+                "pet_policy": {
+                    "type": "string",
+                    "description": "The community's policy and fees on pets."
+                },
+                "pet_policy_source": {
+                    "type": "string",
+                    "description": "The source url of the pet policy. This is usually a link to the community's pet policy page."
+                },
+                "self_showings": {
+                    "type": "boolean",
+                    "description": "Whether the community offers self-showings."
+                },
+                "self_showings_source": {
+                    "type": "string",
+                    "description": "The source url of the self-showings. This is usually a link to the community's self-showing page."
+                },
+                "office_hours": {
+                    "type": "string",
+                    "description": "The office hours of the community."
+                },
+                "resident_portal_sofware_provider": {
+                    "type": "string",
+                    "description": "The software provider for the resident portal."
+                },
+                "community_pages": {
                     "type": "array",
                     "description": "A list of pages associated with the community.",
                     "items": {
@@ -324,9 +328,6 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
         }
     }
 }
-
-
-
 ```
 
 ##### Secret Shop Email Communications Model
