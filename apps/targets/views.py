@@ -44,7 +44,7 @@ class TargetCreateView(LoginRequiredMixin, CreateView):
     template_name = 'targets/form.html'
     login_url = '/accounts/login/'
     redirect_field_name = 'next'
-    success_url = reverse_lazy('targets:index')
+    # success_url = reverse_lazy('targets:index') # Removed: Redirect handled by get_success_url
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -56,6 +56,10 @@ class TargetCreateView(LoginRequiredMixin, CreateView):
         messages.success(self.request, 'Target created successfully.')
         return super().form_valid(form)
 
+    def get_success_url(self):
+        """Redirect to the detail view of the newly created target."""
+        return reverse_lazy('targets:detail', kwargs={'pk': self.object.pk})
+
 
 class TargetUpdateView(LoginRequiredMixin, UpdateView):
     """Update view for an existing target property."""
@@ -65,7 +69,7 @@ class TargetUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'targets/form.html'
     login_url = '/accounts/login/'
     redirect_field_name = 'next'
-    success_url = reverse_lazy('targets:index')
+    # success_url = reverse_lazy('targets:index') # Removed: Redirect handled by get_success_url
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -76,6 +80,10 @@ class TargetUpdateView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         messages.success(self.request, 'Target updated successfully.')
         return super().form_valid(form)
+
+    def get_success_url(self):
+        """Redirect to the detail view of the updated target."""
+        return reverse_lazy('targets:detail', kwargs={'pk': self.object.pk})
 
 
 class TargetDeleteView(LoginRequiredMixin, DeleteView):
