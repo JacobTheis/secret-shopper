@@ -125,174 +125,202 @@ This will be a summary of the results of the shop. It will consist of the follow
 *This is the result schema for the AI info gathering*
 ```
 STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
-    'format': {
-        'type': 'json_schema',
-        'name': 'community',
-        'strict': True,
-        'schema': {
-            'type': 'object',
-            'community': {
-                'name': {
-                    'type': 'string',
-                    'description': 'The name of the community'
-                },
-                'overview': {
-                    'type': 'string',
-                    'description': 'A brief summary or description of the community.'
-                },
-                'url': {
-                    'type': 'string',
-                    'description': 'The link to the community homepage or relevant page.'
-                },
-                'application_fee': {
-                    'type': 'number',
-                    'description': 'The fee charged to prospects for applying to live in the community.'
-                },
-                'administration_fee': {
-                    'type': 'number',
-                    'description': 'The one time fee charged to prospects for administrative purposes.'
-                },
-                'membership_fee': {
-                    'type': 'number',
-                    'description': 'The recurring fee charged to residents for membership in the community. Sometimes called a resident benefits package or amenity package.'
-                },
-                'pet_policy': {
-                    'type': 'number',
-                    'description': 'The community policy and fees on pets.'
-                },
-                'community_pages': {
-                    'type': 'array',
-                    'description': 'A list of pages associated with the community.',
-                    'items': {
-                        'type': 'object',
-                        'properties': {
-                            'name': {
-                                'type': 'string',
-                                'description': 'The name of the page.'
+    "format": {
+        "type": "json_schema",
+        "name": "community",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "community": {
+              "name": {
+                  "type": "string",
+                  "description": "The name of the community"
+              },
+              "overview": {
+                  "type": "string",
+                  "description": "A brief summary or description of the community."
+              },
+              "url": {
+                  "type": "string",
+                  "description": "The link to the community"s homepage or relevant page."
+              },
+              "application_fee": {
+                  "type": "number",
+                  "description": "The fee charged to prospects for applying to live in the community."
+              },
+              "application_fee_source": {
+                  "type": "string",
+                  "description": "The source url of the application fee. This is usually a link to the payment processor."
+              },
+              "administration_fee": {
+                  "type": "number",
+                  "description": "The one time fee charged to prospects for administrative purposes."
+              },
+              "administration_fee_source": {
+                  "type": "string",
+                  "description": "The source url of the administration fee. This is usually a link to the payment processor."
+              },
+              "membership_fee": {
+                  "type": "number",
+                  "description": "The recurring fee charged to residents for membership in the community. Sometimes called a resident benefits package or amenity package."
+              },
+              "membership_fee_source": {
+                  "type": "string",
+                  "description": "The source url of the membership fee. This is usually a link to the payment processor."
+              },
+              "pet_policy": {
+                  "type": "string",
+                  "description": "The community"s policy and fees on pets."
+              },
+              "pet_policy_source": {
+                  "type": "string",
+                  "description": "The source url of the pet policy. This is usually a link to the community"s pet policy page."
+              },
+              "self_showings": {
+                  "type": "boolean",
+                  "description": "Whether the community offers self-showings."
+              },
+              "self_showings_source": {
+                  "type": "string",
+                  "description": "The source url of the self-showings. This is usually a link to the community"s self-showing page."
+              },
+              "office_hours": {
+                  "type": "string",
+                  "description": "The office hours of the community."
+              },
+              "community_pages": {
+                    "type": "array",
+                    "description": "A list of pages associated with the community.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the page."
                             },
-                            'overview': {
-                                'type': 'string',
-                                'description': 'A brief overview or description of the page and user experience.'
+                            "overview": {
+                                "type": "string",
+                                "description": "A brief overview or description of the page and user experience."
                             },
-                            'url': {
-                                'type': 'string',
-                                'description': 'The URL for the page.'
+                            "url": {
+                                "type": "string",
+                                "description": "The URL for the page."
                             }
                         },
-                        'required': [
-                            'name',
-                            'overview',
-                            'url'
+                        "required": [
+                            "name",
+                            "overview",
+                            "url"
                         ],
-                        'additionalProperties': False
+                        "additionalProperties": False
                     }
                 },
-                'floor_plans': {
-                    'type': 'array',
-                    'description': 'A list of all floor plans available in the community.',
-                    'items': {
-                        'type': 'object',
-                        'properties': {
-                            'name': {
-                                'type': 'string',
-                                'description': 'The name of the floor plan.'
+                "floor_plans": {
+                    "type": "array",
+                    "description": "A list of all floor plans available in the community.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the floor plan."
                             },
-                            'beds': {
-                                'type': 'number',
-                                'description': 'The number of bedrooms in the floor plan.'
+                            "beds": {
+                                "type": "number",
+                                "description": "The number of bedrooms in the floor plan."
                             },
-                            'baths': {
-                                'type': 'number',
-                                'description': 'The number of bathrooms in the floor plan.'
+                            "baths": {
+                                "type": "number",
+                                "description": "The number of bathrooms in the floor plan."
                             },
-                            'url': {
-                                'type': 'string',
-                                'description': 'The URL for the floor plan.'
+                            "url": {
+                                "type": "string",
+                                "description": "The URL for the floor plan."
                             },
-                            'sqft': {
-                                'type': 'number',
-                                'description': 'The square footage of the floor plan.'
+                            "sqft": {
+                                "type": "number",
+                                "description": "The square footage of the floor plan."
                             },
-                            'type': {
-                                'type': 'string',
-                                'description': 'The type of unit (e.g. apartment, townhome, etc.).'
+                            "type": {
+                                "type": "string",
+                                "description": "The type of unit (e.g. apartment, townhome, etc.)."
                             },
-                            'min_rental_price': {
-                                'type': 'number',
-                                'description': 'The minimum rental price of the floor plan.'
+                            "min_rental_price": {
+                                "type": "number",
+                                "description": "The minimum rental price of the floor plan."
                             },
-                            'max_rental_price': {
-                                'type': 'number',
-                                'description': 'The maximum rental price of the floor plan.'
+                            "max_rental_price": {
+                                "type": "number",
+                                "description": "The maximum rental price of the floor plan."
                             },
-                            'security_deposit': {
-                                'type': 'number',
-                                'description': 'The security deposit required for the floor plan.'
+                            "security_deposit": {
+                                "type": "number",
+                                "description": "The security deposit required for the floor plan."
                             },
-                            'floor_plan_amenities': {
-                                'type': 'array',
-                                'description': 'A list of amenities available in the floor plan.',
-                                'items': {
-                                    'type': 'object',
-                                    'properties': {
-                                        'amenity': {
-                                            'type': 'string',
-                                            'description': 'The name or description of the amenity.'
+                            "floor_plan_amenities": {
+                                "type": "array",
+                                "description": "A list of amenities available in the floor plan.",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "amenity": {
+                                            "type": "string",
+                                            "description": "The name or description of the amenity."
                                         }
                                     },
-                                    'required': [
-                                        'amenity'
+                                    "required": [
+                                        "amenity"
                                     ],
-                                    'additionalProperties': False
+                                    "additionalProperties": False
                                 }
                             }
                         },
-                        'required': [
-                            'name',
-                            'beds',
-                            'baths',
-                            'url',
-                            'sqft',
-                            'type',
-                            'min_rental_price',
-                            'max_rental_price',
-                            'security_deposit',
-                            'floor_plan_amenities'
+                        "required": [
+                            "name",
+                            "beds",
+                            "baths",
+                            "url",
+                            "sqft",
+                            "type",
+                            "min_rental_price",
+                            "max_rental_price",
+                            "security_deposit",
+                            "floor_plan_amenities"
                         ],
-                        'additionalProperties': False
+                        "additionalProperties": False
                     }
                 },
-                'community_amenities': {
-                    'type': 'array',
-                    'description': 'A list of amenities available in the community.',
-                    'items': {
-                        'type': 'object',
-                        'properties': {
-                            'amenity': {
-                                'type': 'string',
-                                'description': 'The name or description of the amenity.'
+                "community_amenities": {
+                    "type": "array",
+                    "description": "A list of amenities available in the community.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "amenity": {
+                                "type": "string",
+                                "description": "The name or description of the amenity."
                             }
                         },
-                        'required': [
-                            'amenity'
+                        "required": [
+                            "amenity"
                         ],
-                        'additionalProperties': False
+                        "additionalProperties": False
                     }
                 }
             },
-            'required': [
-                'name',
-                'overview',
-                'url',
-                'application_fee',
-                'administration_fee',
-                'membership_fee',
-                'pet_policy',
-                'community_pages',
-                'community_amenities',
-                'floor_plans'
+            "required": [
+                "name",
+                "overview",
+                "url",
+                "application_fee",
+                "administration_fee",
+                "membership_fee",
+                "pet_policy",
+                "community_pages",
+                "community_amenities",
+                "floor_plans"
             ],
-            'additionalProperties': False
+            "additionalProperties": False
         }
     }
 }
