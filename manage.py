@@ -10,13 +10,15 @@ import dotenv  # Add this import
 BASE_DIR = Path(__file__).resolve().parent
 sys.path.append(str(BASE_DIR))
 
+
 def main():
     """Run administrative tasks."""
     # Load .env file
     dotenv.load_dotenv()  # Add this line
 
     # Use DJANGO_SETTINGS_MODULE from .env or default to development
-    settings_module = os.environ.get("DJANGO_SETTINGS_MODULE", "config.settings.development")
+    settings_module = os.environ.get(
+        "DJANGO_SETTINGS_MODULE", "config.settings.development")
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", settings_module)
     try:
         from django.core.management import execute_from_command_line
