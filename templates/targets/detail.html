@@ -3,22 +3,126 @@
 {% block title %}{{ target.name }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h2>{{ target.name }}</h2>
-                    <div>
-                        <a href="{% url 'targets:update' target.id %}" class="btn btn-primary btn-sm">Edit</a>
-                        <a href="{% url 'targets:delete' target.id %}" class="btn btn-danger btn-sm">Delete</a>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <h4>Property Information</h4>
-                            <table class="table table-bordered">
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">{{ target.name }}</h1>
+        <div>
+            <a href="{% url 'targets:index' %}" class="btn btn-outline-secondary me-2">Back to List</a>
+            <a href="{% url 'targets:update' target.id %}" class="btn btn-primary me-2">Edit</a>
+            <a href="{% url 'targets:delete' target.id %}" class="btn btn-danger">Delete</a>
+        </div>
+    </div>
+
+    <hr class="mb-4">
+
+    <div class="row g-4">
+        <!-- Property Information Section -->
+        <div class="col-lg-6">
+            <div class="p-4 border rounded shadow-sm h-100">
+                <h4 class="mb-3">Property Information</h4>
+                <table class="table table-sm table-borderless">
+                    <tbody>
+                        <tr>
+                            <th scope="row" style="width: 30%;">Address</th>
+                            <td>{{ target.street_address }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">City</th>
+                            <td>{{ target.city }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">State</th>
+                            <td>{{ target.state }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Zip Code</th>
+                            <td>{{ target.zip_code }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Contact Information Section -->
+        <div class="col-lg-6">
+            <div class="p-4 border rounded shadow-sm h-100">
+                <h4 class="mb-3">Contact Information</h4>
+                <table class="table table-sm table-borderless">
+                    <tbody>
+                        <tr>
+                            <th scope="row" style="width: 30%;">Phone</th>
+                            <td>{{ target.phone_number|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Email</th>
+                            <td>
+                                {% if target.email_address %}
+                                    <a href="mailto:{{ target.email_address }}">{{ target.email_address }}</a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Website</th>
+                            <td>
+                                {% if target.website %}
+                                    <a href="{{ target.website }}" target="_blank" rel="noopener noreferrer">{{ target.website }}</a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-1">
+        <!-- Management Section -->
+        <div class="col-lg-6">
+            <div class="p-4 border rounded shadow-sm h-100">
+                <h4 class="mb-3">Management</h4>
+                <table class="table table-sm table-borderless">
+                    <tbody>
+                        <tr>
+                            <th scope="row" style="width: 30%;">Property Manager</th>
+                            <td>{{ target.property_manager|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Owners</th>
+                            <td>{{ target.owners|default:"-"|linebreaksbr }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Metadata Section -->
+        <div class="col-lg-6">
+            <div class="p-4 border rounded shadow-sm h-100">
+                <h4 class="mb-3">Metadata</h4>
+                <table class="table table-sm table-borderless">
+                    <tbody>
+                        <tr>
+                            <th scope="row" style="width: 30%;">Created</th>
+                            <td>{{ target.created_at|date:"F j, Y, g:i a" }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Last Updated</th>
+                            <td>{{ target.updated_at|date:"F j, Y, g:i a" }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Removed redundant Back to List button from here -->
+
+</div>
+{% endblock %}
                                 <tr>
                                     <th>Address</th>
                                     <td>{{ target.street_address }}</td>
