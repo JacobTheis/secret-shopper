@@ -21,7 +21,7 @@ class ShopAdmin(admin.ModelAdmin):
     )
     list_filter = ("status", "user", "created_at")
     search_fields = ("target__name", "user__username", "persona__name")
-    readonly_fields = ("created_at", "updated_at", "shop") # Make shop read-only here too
+    readonly_fields = ("created_at", "updated_at")
     list_per_page = 25
 
     @admin.display(description="Community Info")

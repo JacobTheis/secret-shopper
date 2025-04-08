@@ -536,3 +536,10 @@ To handle this, we're going to use Celery.  This will allow us to handle all tha
 ### Database
 
 We will run this on a Postgres database. On the local test environment this will be run in a docket container.
+
+
+### AI Integrations
+
+#### Summary and Initial Data Gathering
+
+The AI will be used to gather information about the target property. This will be done by sending a request to the AI service with the target property information 
