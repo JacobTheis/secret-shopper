@@ -18,7 +18,7 @@
     {# --- Basic Target Info --- #}
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h1 class="card-title h5 mb-0">Target: {{ target.name }}</h1>
+            <h1 class="card-title h5 mb-0">{{ target.name }}</h1>
             <div>
                 <a href="{% url 'targets:update' target.pk %}" class="btn btn-primary btn-sm">Edit Target</a>
                 <a href="{% url 'targets:delete' target.pk %}" class="btn btn-danger btn-sm">Delete Target</a>
