@@ -53,7 +53,7 @@ class Shop(models.Model):
 
 
 class ShopResult(models.Model):
-    """Stores the summarized results and extracted data for a completed shop."""
+    """Links a Shop to its detailed, structured results."""
 
     shop = models.OneToOneField(
         Shop,
@@ -62,21 +62,243 @@ class ShopResult(models.Model):
         primary_key=True,
         help_text="The shop this result belongs to.",
     )
-    summary = models.TextField(
-        blank=True, help_text="AI-generated summary of the interaction."
+    # Raw JSON can be stored here as a backup if needed in the future
+    # raw_data = models.JSONField(null=True, blank=True, help_text="Raw AI output.")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Shop Result Link"
+        verbose_name_plural = "Shop Result Links"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        """String representation of the ShopResult model."""
+        return f"Result Link for {self.shop}"
+
+
+class Amenity(models.Model):
+    """Represents a distinct community or floor plan amenity."""
+
+    name = models.CharField(
+        max_length=255,
+        unique=True,
+        help_text="The unique name of the amenity (e.g., 'Swimming Pool', 'In-unit Washer/Dryer').",
     )
-    extracted_data = models.JSONField(
-        default=dict,
-        blank=True,
-        help_text="Structured data extracted from the interaction.",
+    description = models.TextField(
+        blank=True, help_text="Optional description of the amenity."
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Shop Result"
-        verbose_name_plural = "Shop Results"
+        ordering = ["name"]
+        verbose_name = "Amenity"
+        verbose_name_plural = "Amenities"
 
     def __str__(self) -> str:
-        """String representation of the ShopResult model."""
-        return f"Result for {self.shop}"
+        """String representation of the Amenity model."""
+        return self.name
+
+
+class CommunityInfo(models.Model):
+    """Stores the structured information gathered about a community."""
+
+    shop_result = models.OneToOneField(
+        ShopResult,
+        on_delete=models.CASCADE,
+        related_name="community_info",
+        help_text="The shop result this community information belongs to.",
+    )
+    name = models.CharField(
+        max_length=255, blank=True, help_text="The name of the community."
+    )
+    overview = models.TextField(
+        blank=True, help_text="A brief summary or description of the community."
+    )
+    url = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="The link to the community's homepage or relevant page.",
+    )
+    application_fee = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="The fee charged for applying.",
+    )
+    application_fee_source = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="The source URL for the application fee.",
+    )
+    administration_fee = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="The one-time administrative fee.",
+    )
+    administration_fee_source = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="The source URL for the administration fee.",
+    )
+    membership_fee = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Recurring membership or resident benefit package fee.",
+    )
+    membership_fee_source = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="The source URL for the membership fee.",
+    )
+    pet_policy = models.TextField(
+        blank=True, help_text="The community's policy and fees on pets."
+    )
+    pet_policy_source = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="The source URL for the pet policy.",
+    )
+    self_showings = models.BooleanField(
+        null=True, blank=True, help_text="Whether the community offers self-showings."
+    )
+    self_showings_source = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="The source URL for self-showing information.",
+    )
+    office_hours = models.CharField(
+        max_length=255, blank=True, help_text="The office hours of the community."
+    )
+    resident_portal_provider = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="The software provider for the resident portal.",
+    )
+    community_amenities = models.ManyToManyField(
+        Amenity,
+        related_name="communities",
+        blank=True,
+        help_text="Amenities available in the community.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Community Information"
+        verbose_name_plural = "Community Information"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        """String representation of the CommunityInfo model."""
+        return f"Info for {self.name or f'ShopResult {self.shop_result_id}'}"
+
+
+class CommunityPage(models.Model):
+    """Represents a specific page found on the community website."""
+
+    community_info = models.ForeignKey(
+        CommunityInfo,
+        on_delete=models.CASCADE,
+        related_name="pages",
+        help_text="The community this page belongs to.",
+    )
+    name = models.CharField(max_length=255, help_text="The name or title of the page.")
+    overview = models.TextField(
+        blank=True, help_text="A brief overview or description of the page."
+    )
+    url = models.URLField(max_length=500, help_text="The URL for the page.")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Community Page"
+        verbose_name_plural = "Community Pages"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        """String representation of the CommunityPage model."""
+        return f"Page '{self.name}' for {self.community_info}"
+
+
+class FloorPlan(models.Model):
+    """Represents a specific floor plan available in the community."""
+
+    community_info = models.ForeignKey(
+        CommunityInfo,
+        on_delete=models.CASCADE,
+        related_name="floor_plans",
+        help_text="The community this floor plan belongs to.",
+    )
+    name = models.CharField(max_length=255, help_text="The name of the floor plan.")
+    beds = models.PositiveSmallIntegerField(
+        null=True, blank=True, help_text="Number of bedrooms."
+    )
+    baths = models.DecimalField(
+        max_digits=3,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        help_text="Number of bathrooms (e.g., 1.0, 1.5, 2.0).",
+    )
+    url = models.URLField(
+        max_length=500, blank=True, null=True, help_text="The URL for the floor plan."
+    )
+    sqft = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Square footage."
+    )
+    type = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Type of unit (e.g., Apartment, Townhome, Studio).",
+    )
+    min_rental_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Minimum rental price.",
+    )
+    max_rental_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Maximum rental price.",
+    )
+    security_deposit = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Security deposit amount.",
+    )
+    amenities = models.ManyToManyField(
+        Amenity,
+        related_name="floor_plans",
+        blank=True,
+        help_text="Amenities specific to this floor plan.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Floor Plan"
+        verbose_name_plural = "Floor Plans"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        """String representation of the FloorPlan model."""
+        return f"{self.name} ({self.beds}bd/{self.baths}ba) for {self.community_info}"
