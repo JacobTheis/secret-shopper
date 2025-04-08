@@ -1,4 +1,3 @@
-import admin_thumbnails # Not used in the final version, can be removed if not needed elsewhere
 from django.contrib import admin
 from django.urls import reverse # Import reverse
 from django.utils.html import format_html
