@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% load static %} {# Load static if needed for specific assets on this page #}
+
+{% block title %}{{ title|default:"Target Details" }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    {# Display messages from Create/Update views #}
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {# --- Basic Target Info --- #}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h1 class="card-title h5 mb-0">Target: {{ target.name }}</h1>
+        </div>
+        <div class="card-body">
+            <p><strong>Address:</strong> {{ target.street_address|default:"N/A" }}, {{ target.city|default:"N/A" }}, {{ target.state|default:"N/A" }} {{ target.zip_code|default:"N/A" }}</p>
+            <p><strong>Email:</strong> {{ target.email_address|default:"N/A" }}</p>
+            <p><strong>Phone:</strong> {{ target.phone_number|default:"N/A" }}</p>
+            <p><strong>Website:</strong> {% if target.website %}<a href="{{ target.website }}" target="_blank" rel="noopener noreferrer">{{ target.website }}</a>{% else %}N/A{% endif %}</p>
+            <p><strong>Owner(s):</strong> {{ target.owners|default:"N/A" }}</p>
+            <p><strong>Property Manager:</strong> {{ target.property_manager|default:"N/A" }}</p>
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'targets:update' target.pk %}" class="btn btn-primary btn-sm">Edit Target</a>
+            <a href="{% url 'targets:delete' target.pk %}" class="btn btn-danger btn-sm">Delete Target</a>
+            <a href="{% url 'targets:index' %}" class="btn btn-secondary btn-sm">Back to List</a>
+            {# Add button to trigger a new shop? #}
+            {# <a href="#" class="btn btn-success btn-sm">Start New Shop</a> #}
+        </div>
+    </div>
+
+    {# --- Latest Shop Results Section --- #}
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title h5 mb-0">Latest Secret Shop Results</h2>
+        </div>
+        <div class="card-body">
+            {% if latest_completed_shop %}
+                <p><strong>Shop Status:</strong> <span class="badge bg-success">{{ latest_completed_shop.get_status_display }}</span></p>
+                <p><strong>Completed On:</strong> {{ latest_completed_shop.end_time|date:"Y-m-d H:i T"|default:"N/A" }}</p>
+                <hr>
+
+                {% if latest_shop_info %}
+                    {# --- General Community Info --- #}
+                    <h3 class="h6">Community Information</h3>
+                    <dl class="row">
+                        <dt class="col-sm-3">Community Name:</dt>
+                        <dd class="col-sm-9">{{ latest_shop_info.name|default:"N/A" }}</dd>
+
+                        <dt class="col-sm-3">Overview:</dt>
+                        <dd class="col-sm-9">{{ latest_shop_info.overview|default:"N/A"|linebreaksbr }}</dd>
+
+                        <dt class="col-sm-3">URL:</dt>
+                        <dd class="col-sm-9">{% if latest_shop_info.url %}<a href="{{ latest_shop_info.url }}" target="_blank" rel="noopener noreferrer">{{ latest_shop_info.url }}</a>{% else %}N/A{% endif %}</dd>
+
+                        <dt class="col-sm-3">Application Fee:</dt>
+                        <dd class="col-sm-9">${{ latest_shop_info.application_fee|floatformat:2|default:"N/A" }} {% if latest_shop_info.application_fee_source %}(<a href="{{ latest_shop_info.application_fee_source }}" target="_blank" rel="noopener noreferrer">Source</a>){% endif %}</dd>
+
+                        <dt class="col-sm-3">Administration Fee:</dt>
+                        <dd class="col-sm-9">${{ latest_shop_info.administration_fee|floatformat:2|default:"N/A" }} {% if latest_shop_info.administration_fee_source %}(<a href="{{ latest_shop_info.administration_fee_source }}" target="_blank" rel="noopener noreferrer">Source</a>){% endif %}</dd>
+
+                        <dt class="col-sm-3">Membership Fee:</dt>
+                        <dd class="col-sm-9">${{ latest_shop_info.membership_fee|floatformat:2|default:"N/A" }} {% if latest_shop_info.membership_fee_source %}(<a href="{{ latest_shop_info.membership_fee_source }}" target="_blank" rel="noopener noreferrer">Source</a>){% endif %}</dd>
+
+                        <dt class="col-sm-3">Pet Policy:</dt>
+                        <dd class="col-sm-9">{{ latest_shop_info.pet_policy|default:"N/A"|linebreaksbr }} {% if latest_shop_info.pet_policy_source %}(<a href="{{ latest_shop_info.pet_policy_source }}" target="_blank" rel="noopener noreferrer">Source</a>){% endif %}</dd>
+
+                        <dt class="col-sm-3">Self Showings:</dt>
+                        <dd class="col-sm-9">{{ latest_shop_info.self_showings|yesno:"Yes,No,N/A" }} {% if latest_shop_info.self_showings_source %}(<a href="{{ latest_shop_info.self_showings_source }}" target="_blank" rel="noopener noreferrer">Source</a>){% endif %}</dd>
+
+                        <dt class="col-sm-3">Office Hours:</dt>
+                        <dd class="col-sm-9">{{ latest_shop_info.office_hours|default:"N/A" }}</dd>
+
+                        <dt class="col-sm-3">Resident Portal:</dt>
+                        <dd class="col-sm-9">{{ latest_shop_info.resident_portal_sofware_provider|default:"N/A" }}</dd>
+                    </dl>
+                    <hr>
+
+                    {# --- Community Pages --- #}
+                    <h3 class="h6">Community Pages Found</h3>
+                    {% with pages=latest_shop_info.communitypage_set.all %} {# Adjust related name if needed #}
+                        {% if pages %}
+                            <ul class="list-group list-group-flush mb-3">
+                                {% for page in pages %}
+                                    <li class="list-group-item">
+                                        <strong>{{ page.name }}</strong> {% if page.url %}(<a href="{{ page.url }}" target="_blank" rel="noopener noreferrer">Visit</a>){% endif %}
+                                        <p class="mb-0 small text-muted">{{ page.overview|default:""|linebreaksbr }}</p>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted">No specific community pages were identified.</p>
+                        {% endif %}
+                    {% endwith %}
+                    <hr>
+
+                    {# --- Floor Plans --- #}
+                    <h3 class="h6">Floor Plans</h3>
+                    {% with floor_plans=latest_shop_info.floorplan_set.all %} {# Adjust related name if needed #}
+                        {% if floor_plans %}
+                            <div class="row row-cols-1 row-cols-md-2 g-3 mb-3">
+                                {% for plan in floor_plans %}
+                                <div class="col">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h4 class="card-title h6">{{ plan.name|default:"Unnamed Plan" }}</h4>
+                                            <p class="card-text mb-1"><strong>Type:</strong> {{ plan.type|default:"N/A" }}</p>
+                                            <p class="card-text mb-1"><strong>Beds/Baths:</strong> {{ plan.beds|default:"?" }}/{{ plan.baths|default:"?" }}</p>
+                                            <p class="card-text mb-1"><strong>SqFt:</strong> {{ plan.sqft|default:"N/A" }}</p>
+                                            <p class="card-text mb-1"><strong>Rent:</strong> ${{ plan.min_rental_price|floatformat:2|default:"N/A" }} - ${{ plan.max_rental_price|floatformat:2|default:"N/A" }}</p>
+                                            <p class="card-text mb-1"><strong>Deposit:</strong> ${{ plan.security_deposit|floatformat:2|default:"N/A" }}</p>
+                                            {% if plan.url %}<p class="card-text mb-2"><a href="{{ plan.url }}" target="_blank" rel="noopener noreferrer">View Details</a></p>{% endif %}
+
+                                            {% with plan_amenities=plan.amenities.all %}
+                                                {% if plan_amenities %}
+                                                    <h5 class="h6 mt-2">Amenities:</h5>
+                                                    <ul class="list-unstyled small">
+                                                    {% for amenity in plan_amenities %}
+                                                        <li>- {{ amenity.name }}</li>
+                                                    {% endfor %}
+                                                    </ul>
+                                                {% endif %}
+                                            {% endwith %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No floor plan information was gathered.</p>
+                        {% endif %}
+                    {% endwith %}
+                    <hr>
+
+                    {# --- Community Amenities --- #}
+                    <h3 class="h6">Community Amenities</h3>
+                    {% with community_amenities=latest_shop_info.amenities.all %} {# Adjust related name if needed #}
+                        {% if community_amenities %}
+                            <ul class="list-inline">
+                                {% for amenity in community_amenities %}
+                                    <li class="list-inline-item"><span class="badge bg-secondary">{{ amenity.name }}</span></li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted">No general community amenities were identified.</p>
+                        {% endif %}
+                    {% endwith %}
+
+                {% else %}
+                    <p class="text-muted">Detailed information gathering results are not available for the latest completed shop (Shop ID: {{ latest_completed_shop.id }}).</p>
+                {% endif %} {# /if latest_shop_info #}
+
+            {% else %}
+                <p class="text-muted">No completed secret shops found for this target yet.</p>
+                {# Optionally add a button to trigger the first shop #}
+                {# <a href="#" class="btn btn-success">Start First Shop</a> #}
+            {% endif %} {# /if latest_completed_shop #}
+        </div> {# /card-body #}
+    </div> {# /card #}
+</div> {# /container #}
+{% endblock %}
+
+{% block extra_js %}
+{# Add any specific JS needed for this page, e.g., for tooltips or modals #}
+{% endblock %}
