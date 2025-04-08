@@ -51,7 +51,7 @@ class TargetDetailView(LoginRequiredMixin, DetailView):
         latest_completed_shop = Shop.objects.filter(
             target=target,
             status=Shop.Status.COMPLETED
-        ).order_by('-end_time').first()
+        ).order_by('-updated_at').first() # Order by update timestamp to get the latest
 
         if latest_completed_shop:
             try:
