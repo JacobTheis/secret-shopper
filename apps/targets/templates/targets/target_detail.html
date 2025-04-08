@@ -17,8 +17,15 @@
 
     {# --- Basic Target Info --- #}
     <div class="card mb-4">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <h1 class="card-title h5 mb-0">Target: {{ target.name }}</h1>
+            <div>
+                <a href="{% url 'targets:update' target.pk %}" class="btn btn-primary btn-sm">Edit Target</a>
+                <a href="{% url 'targets:delete' target.pk %}" class="btn btn-danger btn-sm">Delete Target</a>
+                <a href="{% url 'targets:index' %}" class="btn btn-secondary btn-sm">Back to List</a>
+                {# Add button to trigger a new shop? #}
+                {# <a href="#" class="btn btn-success btn-sm">Start New Shop</a> #}
+            </div>
         </div>
         <div class="card-body">
             <p><strong>Address:</strong> {{ target.street_address|default:"N/A" }}, {{ target.city|default:"N/A" }}, {{ target.state|default:"N/A" }} {{ target.zip_code|default:"N/A" }}</p>
@@ -28,13 +35,7 @@
             <p><strong>Owner(s):</strong> {{ target.owners|default:"N/A" }}</p>
             <p><strong>Property Manager:</strong> {{ target.property_manager|default:"N/A" }}</p>
         </div>
-        <div class="card-footer">
-            <a href="{% url 'targets:update' target.pk %}" class="btn btn-primary btn-sm">Edit Target</a>
-            <a href="{% url 'targets:delete' target.pk %}" class="btn btn-danger btn-sm">Delete Target</a>
-            <a href="{% url 'targets:index' %}" class="btn btn-secondary btn-sm">Back to List</a>
-            {# Add button to trigger a new shop? #}
-            {# <a href="#" class="btn btn-success btn-sm">Start New Shop</a> #}
-        </div>
+        {# Buttons moved to card header #}
     </div>
 
     {# --- Latest Shop Results Section --- #}
