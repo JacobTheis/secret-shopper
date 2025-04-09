@@ -26,7 +26,7 @@ class OpenAIClient:
                           prompt: str,
                           model: str = "gpt-4o-mini",
                           temperature: float = 1,
-                          max_tokens: int = 5000,
+                          max_output_tokens: int = 5000,
                           tools: Optional[List[str]] = [],
                           tool_choice: Optional[str] = {}
                           ) -> str:
@@ -36,7 +36,7 @@ class OpenAIClient:
             prompt: The input prompt for the AI
             model: The model to use
             temperature: Controls randomness (0-1)
-            max_tokens: Maximum tokens in the response
+            max_output_tokens: Maximum tokens in the response
 
         Returns:
             The generated text response
@@ -54,7 +54,7 @@ class OpenAIClient:
                     }
                 ],
                 temperature=temperature,
-                max_tokens=max_tokens,
+                max_output_tokens=max_output_tokens,
                 tools=tools,
             )
             return response.output_text
@@ -103,7 +103,7 @@ class OpenAIClient:
             prompt=prompt,
             model="gpt-4-turbo",
             temperature=0.8,
-            max_tokens=1000
+            max_output_tokens=1000
         )
 
         # Parse the response into a structured persona
