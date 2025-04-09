@@ -68,7 +68,7 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
                     "type": "string",
                     "description": "The office hours of the community."
                 },
-                "resident_portal_sofware_provider": {
+                "resident_portal_software_provider": {
                     "type": "string",
                     "description": "The software provider for the resident portal."
                 },
@@ -207,7 +207,7 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
                 "self_showings",
                 "self_showings_source",
                 "office_hours",
-                "resident_portal_sofware_provider",
+                "resident_portal_software_provider",
                 "community_pages",
                 "community_amenities",
                 "floor_plans"

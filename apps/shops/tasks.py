@@ -24,13 +24,15 @@ def _parse_and_save_community_info(shop_result: ShopResult, ai_response_data: Di
     """
     Parses the AI response data and saves it to the CommunityInfo related models.
     This is a complex function and needs careful implementation based on the exact
-    structure of ai_response_data matching STRUCTURED_OUTPUT_INFORMATION_GATHERING.
+    structure of ai_response_data matching the 'properties' section of STRUCTURED_OUTPUT_INFORMATION_GATHERING.
     """
-    community_data = ai_response_data.get("properties", {})
-    if not community_data:
-        logger.warning(f"AI response for ShopResult {
-                       shop_result.shop_id} missing 'community' key.")
-        raise ValueError("AI response missing 'community' data.")
+    # Expecting ai_response_data to be the dictionary containing community properties
+    if not isinstance(ai_response_data, dict):
+        logger.error(f"Invalid data type passed to _parse_and_save_community_info for ShopResult {
+                     shop_result.shop_id}. Expected dict, got {type(ai_response_data)}.")
+        raise TypeError("Invalid data type for parsing community info.")
+
+    community_data = ai_response_data # Use the passed dictionary directly
 
     # Create or update CommunityInfo
     # Using update_or_create to handle potential retries or re-runs
@@ -51,7 +53,7 @@ def _parse_and_save_community_info(shop_result: ShopResult, ai_response_data: Di
             'self_showings': community_data.get('self_showings'),
             'self_showings_source': community_data.get('self_showings_source'),
             'office_hours': community_data.get('office_hours'),
-            'resident_portal_software_provider': community_data.get('resident_portal_sofware_provider'),
+            'resident_portal_software_provider': community_data.get('resident_portal_software_provider'), # Corrected key
             # Note: amenities are handled separately below
         }
     )
@@ -158,39 +160,44 @@ def start_information_gathering_task(self, shop_id: str) -> None:
             )
 
             # --- Response Parsing and Saving ---
-            logger.info(f"Received AI response for Shop ID: {
-                        shop_id}. Parsing...")
+            logger.info(f"Received AI response for Shop ID: {shop_id}. Parsing...")
 
-            # The response might be nested if using function calling
-            # Adjust parsing based on actual OpenAI API response structure for function calls
             try:
-                # Assuming the response content contains the JSON string from the function call
-                # This needs verification based on actual API output
-                # Or access nested structure like response.choices[0].message.tool_calls[0].function.arguments
-                response_data = json.loads(ai_response_str)
-                if isinstance(response_data, str):  # Sometimes it's double-encoded
-                    response_data = json.loads(response_data)
+                # Attempt to parse the raw string response as JSON
+                parsed_json = json.loads(ai_response_str)
+
+                # Check if the parsed result is itself a string (double-encoded JSON)
+                if isinstance(parsed_json, str):
+                    logger.warning(f"AI response for Shop ID {shop_id} appears double-encoded. Attempting second parse.")
+                    parsed_json = json.loads(parsed_json)
+
+                # Now, parsed_json should be the dictionary matching the schema's properties
+                if not isinstance(parsed_json, dict):
+                    logger.error(f"Parsed AI response for Shop ID {shop_id} is not a dictionary. Type: {type(parsed_json)}")
+                    raise ValueError("Parsed AI response is not a dictionary.")
+
+                response_data = parsed_json # This is the dictionary we need
 
             except json.JSONDecodeError as json_err:
-                logger.error(f"Failed to decode JSON response for Shop ID {
-                             shop_id}: {json_err}")
+                logger.error(f"Failed to decode JSON response for Shop ID {shop_id}: {json_err}")
                 logger.error(f"Raw AI Response: {ai_response_str}")
-                raise ValueError(f"Invalid JSON received from AI: {
-                                 json_err}") from json_err
-            except (AttributeError, IndexError, KeyError) as e:
-                logger.error(f"Error accessing expected structure in AI response for Shop ID {
-                             shop_id}: {e}")
+                raise ValueError(f"Invalid JSON received from AI: {json_err}") from json_err
+            except Exception as parse_err: # Catch other potential errors during parsing/checking
+                logger.error(f"Error processing AI response structure for Shop ID {shop_id}: {parse_err}")
                 logger.error(f"Raw AI Response: {ai_response_str}")
-                raise ValueError(
-                    f"Unexpected AI response structure: {e}") from e
+                raise ValueError(f"Unexpected AI response structure or content: {parse_err}") from parse_err
 
             # Use a transaction to ensure atomicity when creating related objects
             with transaction.atomic():
                 # Create or get the ShopResult linked to the Shop
-                shop_result, _ = ShopResult.objects.get_or_create(shop=shop)
-                logger.info(f"Parsing and saving community info for ShopResult {
-                            shop_result.shop_id}")
-                _parse_and_save_community_info(shop_result, response_data)
+                shop_result, created = ShopResult.objects.get_or_create(shop=shop)
+                if created:
+                    logger.info(f"Created new ShopResult for Shop ID {shop_id}")
+                else:
+                    logger.info(f"Found existing ShopResult for Shop ID {shop_id}")
+
+                logger.info(f"Parsing and saving community info for ShopResult {shop_result.id}") # Use shop_result.id
+                _parse_and_save_community_info(shop_result, response_data) # Pass the extracted dictionary
 
             # Update shop status to COMPLETED
             shop.status = Shop.Status.COMPLETED
