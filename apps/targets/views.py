@@ -13,8 +13,8 @@ from .models import Target
 from .forms import TargetForm
 # Import the necessary models from the 'shops' app
 from apps.shops.models import Shop, ShopResult, CommunityInfo, Amenity, CommunityPage, FloorPlan
-# Placeholder for the actual Celery task - adjust the import path as needed
-# from apps.shops.tasks import start_information_gathering_task
+# Import the Celery task for starting information gathering
+from apps.shops.tasks import start_information_gathering_task
 
 
 class TargetsView(LoginRequiredMixin, ListView):
@@ -181,16 +181,10 @@ class StartShopView(LoginRequiredMixin, View):
                 # created_at and updated_at fields are auto-populated
             )
 
-            # Trigger the asynchronous task (replace with actual task import and call)
-            # start_information_gathering_task.delay(new_shop.id)
-            # print(f"Placeholder: Triggering info gathering task for Shop ID: {new_shop.id}") # Placeholder action
+            # Trigger the asynchronous task
+            start_information_gathering_task.delay(new_shop.id)
 
-            # For now, simulate task start by setting status (REMOVE THIS IN PRODUCTION)
-            new_shop.status = Shop.Status.IN_PROGRESS
-            new_shop.save()
-            # --- End Simulation ---
-
-            messages.success(request, f"Started information gathering for '{target.name}'.")
+            messages.success(request, f"Started information gathering for '{target.name}'. This may take a few minutes.")
 
         # Redirect back to the target detail page
         return redirect('targets:detail', pk=target.pk)
