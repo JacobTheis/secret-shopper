@@ -82,6 +82,12 @@ The target will be created by the user. It will consist of the following informa
 | Parse response     | Parse the response from the agent                                                                                          |
 | Follow up          | Follow up with the agent to gather more information if data is missing                                                     |
 
+#### Secret Shop Process
+
+The Secret Shop process has two main parts, the initial information gathering, and the communications/follow-up. When a new secret shop is created, the initial information gathering will be run as a first step. The user will then need to configure the personas and communications that will be sent before manually kicking off the communications phase of the secret shop.
+
+
+
 #### Shop Model
 
 The shop will consist of the following information:
@@ -542,4 +548,4 @@ We will run this on a Postgres database. On the local test environment this will
 
 #### Summary and Initial Data Gathering
 
-The AI will be used to gather information about the target property. This will be done by sending a request to the AI service with the target property information 
+The AI will be used to gather information about the target property. This will be done by sending a request to the AI service with the target property information. 
