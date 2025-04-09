@@ -167,7 +167,7 @@ class StartShopView(LoginRequiredMixin, View):
         # (e.g., allow restarting, check for recent failures, etc.)
         existing_shop = Shop.objects.filter(
             target=target,
-            status__in=[Shop.Status.PENDING, Shop.Status.GATHERING_INFO]
+            status__in=[Shop.Status.PENDING, Shop.Status.IN_PROGRESS]
         ).first()
 
         if existing_shop:
@@ -177,9 +177,8 @@ class StartShopView(LoginRequiredMixin, View):
             new_shop = Shop.objects.create(
                 target=target,
                 user=request.user, # Associate with the user initiating the shop
-                status=Shop.Status.PENDING, # Start as pending, task will update
-                start_time=timezone.now() # Record start time
-                # end_time will be set upon completion
+                status=Shop.Status.PENDING # Start as pending, task will update
+                # created_at and updated_at fields are auto-populated
             )
 
             # Trigger the asynchronous task (replace with actual task import and call)
@@ -187,7 +186,7 @@ class StartShopView(LoginRequiredMixin, View):
             # print(f"Placeholder: Triggering info gathering task for Shop ID: {new_shop.id}") # Placeholder action
 
             # For now, simulate task start by setting status (REMOVE THIS IN PRODUCTION)
-            new_shop.status = Shop.Status.GATHERING_INFO
+            new_shop.status = Shop.Status.IN_PROGRESS
             new_shop.save()
             # --- End Simulation ---
 
