@@ -159,7 +159,7 @@ def start_information_gathering_task(self, shop_id: str) -> None:
                 prompt=prompt,
                 model=ai_config.get('model'),
                 temperature=ai_config.get('temperature'),
-                max_tokens=ai_config.get('max_tokens'),
+                max_output_tokens=ai_config.get('max_output_tokens'),
                 tools=tools,
                 tool_choice=tool_choice  # Force the model to use our function
             )
