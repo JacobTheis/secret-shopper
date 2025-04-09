@@ -29,7 +29,7 @@ def _parse_and_save_community_info(shop_result: ShopResult, ai_response_data: Di
     community_data = ai_response_data.get("community", {})
     if not community_data:
         logger.warning(f"AI response for ShopResult {
-                       shop_result.id} missing 'community' key.")
+                       shop_result.shop_id} missing 'community' key.")
         raise ValueError("AI response missing 'community' data.")
 
     # Create or update CommunityInfo
@@ -56,7 +56,7 @@ def _parse_and_save_community_info(shop_result: ShopResult, ai_response_data: Di
         }
     )
     logger.info(f"{'Created' if created else 'Updated'} CommunityInfo {
-                community_info.id} for ShopResult {shop_result.id}")
+                community_info.id} for ShopResult {shop_result.shop_id}")
 
     # Clear existing related objects before adding new ones to prevent duplicates on update
     community_info.pages.all().delete()
@@ -118,7 +118,7 @@ def start_information_gathering_task(self, shop_id: str) -> None:
         logger.error(f"Target associated with Shop ID {
                      shop_id} not found. Aborting task.")
         # Optionally update shop status to FAILED here
-        shop.status = Shop.Status.FAILED
+        shop.status = Shop.Status.ERROR
         shop.end_time = timezone.now()
         shop.save(update_fields=['status', 'end_time', 'updated_at'])
         return
@@ -189,7 +189,7 @@ def start_information_gathering_task(self, shop_id: str) -> None:
                 # Create or get the ShopResult linked to the Shop
                 shop_result, _ = ShopResult.objects.get_or_create(shop=shop)
                 logger.info(f"Parsing and saving community info for ShopResult {
-                            shop_result.id}")
+                            shop_result.shop_id}")
                 _parse_and_save_community_info(shop_result, response_data)
 
             # Update shop status to COMPLETED
@@ -211,7 +211,7 @@ def start_information_gathering_task(self, shop_id: str) -> None:
             f"Error during information gathering task for Shop ID {shop_id}: {e}")
         # Update shop status to FAILED
         try:
-            shop.status = Shop.Status.FAILED
+            shop.status = Shop.Status.ERROR
             shop.end_time = timezone.now()
             shop.save(update_fields=['status', 'end_time', 'updated_at'])
         except Exception as save_err:
