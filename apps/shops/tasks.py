@@ -13,7 +13,6 @@ from utils.ai_integration.prompt_templates import PromptTemplates
 from utils.ai_integration.ai_config import (
     get_api_key,
     get_model_config,
-    STRUCTURED_OUTPUT_INFORMATION_GATHERING,
     API_RETRY_CONFIG
 )
 
@@ -54,7 +53,7 @@ def _parse_and_save_community_info(shop_result: ShopResult, ai_response_data: Di
             'self_showings_source': community_data.get('self_showings_source'),
             'office_hours': community_data.get('office_hours'),
             # Corrected key
-            'resident_portal_software_provider': community_data.get('resident_portal_software_provider'),
+            'resident_portal_provider': community_data.get('resident_portal_software_provider'),
             # Note: amenities are handled separately below
         }
     )
@@ -133,7 +132,7 @@ def start_information_gathering_task(self, shop_id: str) -> None:
 
     try:
         # --- AI Interaction ---
-        logger.info(f"Fetching AI configuration for information gathering.")
+        logger.info("Fetching AI configuration for information gathering.")
         ai_config = get_model_config('information_gathering')
         api_key = get_api_key(ai_config.get('service', 'openai'))
 
@@ -144,14 +143,36 @@ def start_information_gathering_task(self, shop_id: str) -> None:
         # Assuming OpenAI for now, adjust if multiple services are supported
         if ai_config.get('service') == 'openai':
             client = OpenAIClient(api_key=api_key)
-            prompt = PromptTemplates.information_gathering(
-                website=target.website)
 
             logger.info(f"Sending request to AI for Shop ID: {
                         shop_id}, Target: {target.name}")
 
+            # Generate the prompt using the PromptTemplates class
+            prompt = PromptTemplates.information_gathering
+
+            model_input = [
+                {
+                    "role": "system",
+                    "content": [
+                        {
+                            "type": "input_text",
+                            "text": prompt
+                        }
+                    ]
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "input_text",
+                            "text": target.website
+                        }
+                    ]
+                }
+            ]
+
             ai_response_str = client.generate_response(
-                input=prompt,
+                input=model_input,
                 model=ai_config.get('model'),
                 temperature=ai_config.get('temperature'),
                 max_output_tokens=ai_config.get('max_output_tokens'),

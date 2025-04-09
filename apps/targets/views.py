@@ -1,3 +1,4 @@
+import logging
 from django.views.generic import (
     ListView, DetailView, CreateView, UpdateView, DeleteView
 )
@@ -15,6 +16,8 @@ from .forms import TargetForm
 from apps.shops.models import Shop, ShopResult, CommunityInfo, Amenity, CommunityPage, FloorPlan
 # Import the Celery task for starting information gathering
 from apps.shops.tasks import start_information_gathering_task
+
+logger = logging.getLogger(__name__)
 
 
 class TargetsView(LoginRequiredMixin, ListView):
@@ -54,7 +57,7 @@ class TargetDetailView(LoginRequiredMixin, DetailView):
 
         # Find the most recent completed shop for this target
         # Ordering by 'end_time' descending assumes end_time is reliably set on completion.
-        # You could also use '-created_at' or another relevant timestamp.
+        # You could also use '-updated_at' or another relevant timestamp.
         latest_completed_shop = Shop.objects.filter(
             target=target,
             status=Shop.Status.COMPLETED
@@ -63,23 +66,20 @@ class TargetDetailView(LoginRequiredMixin, DetailView):
         if latest_completed_shop:
             try:
                 # Attempt to retrieve the linked ShopResult and CommunityInfo
-                # This assumes a OneToOne or ForeignKey relationship structure like:
-                # Shop -> ShopResult -> CommunityInfo
-                # Adjust the access path if your models are linked differently.
-                if hasattr(latest_completed_shop, 'shopresult') and \
-                   hasattr(latest_completed_shop.shopresult, 'communityinfo'):
-                    latest_shop_info = latest_completed_shop.shopresult.communityinfo
-                # Example alternative if CommunityInfo has a ForeignKey to ShopResult:
-                # elif CommunityInfo.objects.filter(shop_result__shop=latest_completed_shop).exists():
-                #    latest_shop_info = CommunityInfo.objects.get(shop_result__shop=latest_completed_shop)
+                # Model relationships: Shop -> ShopResult (result) -> CommunityInfo (community_info)
+                if hasattr(latest_completed_shop, 'result') and \
+                   hasattr(latest_completed_shop.result, 'community_info'):
+                    latest_shop_info = latest_completed_shop.result.community_info
+                # Alternative direct lookup if needed
+                elif CommunityInfo.objects.filter(shop_result__shop=latest_completed_shop).exists():
+                    latest_shop_info = CommunityInfo.objects.get(shop_result__shop=latest_completed_shop)
 
-            except (ShopResult.DoesNotExist, CommunityInfo.DoesNotExist, AttributeError):
+            except (ShopResult.DoesNotExist, CommunityInfo.DoesNotExist, AttributeError) as e:
                 # Handle cases where related objects might be missing or relationships aren't set up
                 # as expected (e.g., shop completed but results processing failed).
                 latest_shop_info = None
-                # Optionally add logging here for debugging missing related objects
-                # logger.warning(f"Could not find complete shop results for Shop ID {latest_completed_shop.id}")
-
+                # Add logging for debugging missing related objects
+                logger.warning(f"Could not find community info for Shop ID {latest_completed_shop.id}: {e}")
 
         context['title'] = f'Target Details: {target.name}' # Add a title for the page
         context['latest_completed_shop'] = latest_completed_shop

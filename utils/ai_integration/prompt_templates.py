@@ -18,19 +18,11 @@ class PromptTemplates:
         return f"""
         You're a real estate professional who has been tasked to look at a website for a rental community. You will share your insights and gather information so that it can be used to better the Property Management business.
 
-        Website: {website}
+        For the community overview, describe the type of community, who seems to be the target market. The feel of the web page, and the overall execution of the website.
 
-        Visit the website and provide details on the following:
-        1. Types of units listed
-        2. Search available floor plans
-        3. Property details provided
-        4. Contact information for agents
-        5. Any unique features or standout elements
-        6. User experience and ease of navigation
+        On the page descriptions. Do the same but also comment on the purpose and effectiveness of the page.
 
-        Include descriptions of key sections.
-
-        Write a summary of your findings in a structured format.
+        Lastly, as you gather the floor plan data. Think hard and double check that none are missed and all the information is accurate and accounted for.
         """
 
     @staticmethod

@@ -84,13 +84,13 @@
                         <dd class="col-sm-9">{{ latest_shop_info.office_hours|default:"N/A" }}</dd>
 
                         <dt class="col-sm-3">Resident Portal:</dt>
-                        <dd class="col-sm-9">{{ latest_shop_info.resident_portal_sofware_provider|default:"N/A" }}</dd>
+                        <dd class="col-sm-9">{{ latest_shop_info.resident_portal_provider|default:"N/A" }}</dd>
                     </dl>
                     <hr>
 
                     {# --- Community Pages --- #}
                     <h3 class="h6">Community Pages Found</h3>
-                    {% with pages=latest_shop_info.communitypage_set.all %} {# Adjust related name if needed #}
+                    {% with pages=latest_shop_info.pages.all %}
                         {% if pages %}
                             <ul class="list-group list-group-flush mb-3">
                                 {% for page in pages %}
@@ -108,7 +108,7 @@
 
                     {# --- Floor Plans --- #}
                     <h3 class="h6">Floor Plans</h3>
-                    {% with floor_plans=latest_shop_info.floorplan_set.all %} {# Adjust related name if needed #}
+                    {% with floor_plans=latest_shop_info.floor_plans.all %}
                         {% if floor_plans %}
                             <div class="row row-cols-1 row-cols-md-2 g-3 mb-3">
                                 {% for plan in floor_plans %}
@@ -146,7 +146,7 @@
 
                     {# --- Community Amenities --- #}
                     <h3 class="h6">Community Amenities</h3>
-                    {% with community_amenities=latest_shop_info.amenities.all %} {# Adjust related name if needed #}
+                    {% with community_amenities=latest_shop_info.community_amenities.all %}
                         {% if community_amenities %}
                             <ul class="list-inline">
                                 {% for amenity in community_amenities %}
