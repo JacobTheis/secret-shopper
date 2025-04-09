@@ -4,7 +4,78 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1>Shops</h1>
-    <p>This is the shops placeholder page.</p>
+    <h1>Secret Shops</h1>
+    
+    {% if messages %}
+    <div class="row mt-3">
+        <div class="col-12">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="row mt-3">
+        <div class="col-12">
+            {% if shops %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Target</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Last Updated</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for shop in shops %}
+                                <tr>
+                                    <td>{{ shop.target.name }}</td>
+                                    <td>
+                                        {% if shop.status == 'PENDING' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif shop.status == 'IN_PROGRESS' %}
+                                            <span class="badge bg-info">In Progress</span>
+                                        {% elif shop.status == 'COMPLETED' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif shop.status == 'ERROR' %}
+                                            <span class="badge bg-danger">Error</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ shop.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ shop.created_at|date:"M d, Y H:i" }}</td>
+                                    <td>{{ shop.updated_at|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        {% if shop.status == 'PENDING' or shop.status == 'IN_PROGRESS' %}
+                                            <form method="post" action="{% url 'shops:cancel' shop.id %}" style="display:inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to cancel this shop?')">
+                                                    Cancel
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                        
+                                        {% if shop.status == 'COMPLETED' %}
+                                            <a href="#" class="btn btn-sm btn-primary">View Results</a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    No shops have been created yet. Create a shop from the targets page.
+                </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
 {% endblock %}

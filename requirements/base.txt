@@ -2,3 +2,4 @@ Django
 python-dotenv
 celery
 redis
+openai

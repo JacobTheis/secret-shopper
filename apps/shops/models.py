@@ -24,6 +24,8 @@ class Shop(models.Model):
         Persona,
         on_delete=models.PROTECT,  # Prevent deleting Persona if used in a Shop
         related_name="shops",
+        null=True,
+        blank=True,
         help_text="The persona used for this shop.",
     )
     target = models.ForeignKey(
