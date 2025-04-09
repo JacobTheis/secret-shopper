@@ -11,7 +11,7 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
         "strict": True,
         "schema": {
             "type": "object",
-            "community": {
+            "properties": {
                 "name": {
                     "type": "string",
                     "description": "The name of the community"
@@ -197,9 +197,17 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
                 "overview",
                 "url",
                 "application_fee",
+                "application_fee_source",
                 "administration_fee",
+                "administration_fee_source",
                 "membership_fee",
+                "membership_fee_source",
                 "pet_policy",
+                "pet_policy_source",
+                "self_showings",
+                "self_showings_source",
+                "office_hours",
+                "resident_portal_sofware_provider",
                 "community_pages",
                 "community_amenities",
                 "floor_plans"

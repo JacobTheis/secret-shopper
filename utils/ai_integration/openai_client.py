@@ -23,12 +23,13 @@ class OpenAIClient:
         self.client = OpenAI(api_key=self.api_key)
 
     def generate_response(self,
-                          prompt: str,
+                          input: str,
                           model: str = "gpt-4o-mini",
                           temperature: float = 1,
                           max_output_tokens: int = 5000,
                           tools: Optional[List[str]] = [],
-                          tool_choice: Optional[str] = {}
+                          tool_choice: Optional[str] = {},
+                          text: Optional[str] = None,
                           ) -> str:
         """Generate a text response from the AI.
 
@@ -44,18 +45,11 @@ class OpenAIClient:
         try:
             response = self.client.responses.create(
                 model=model,
-                input=[
-                    {
-                        "role": "system",
-                        "content": {
-                            "type": "input_text",
-                            "text": prompt
-                        }
-                    }
-                ],
-                temperature=temperature,
+                input=input,
                 max_output_tokens=max_output_tokens,
                 tools=tools,
+                tool_choice=tool_choice,
+                text=text,
             )
             return response.output_text
         except Exception as e:

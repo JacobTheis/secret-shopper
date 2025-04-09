@@ -146,22 +146,15 @@ def start_information_gathering_task(self, shop_id: str) -> None:
 
             logger.info(f"Sending request to AI for Shop ID: {
                         shop_id}, Target: {target.name}")
-            # Use the structured output schema defined in ai_config
-            tools = ai_config.get('tools', [])
-            tool_choice = {"type": "function", "function": {
-                "name": STRUCTURED_OUTPUT_INFORMATION_GATHERING['format']['name']}}
-
-            # Add the function definition to the tools list
-            tools.append(
-                {"type": "function", "function": STRUCTURED_OUTPUT_INFORMATION_GATHERING['format']})
 
             ai_response_str = client.generate_response(
-                prompt=prompt,
+                input=prompt,
                 model=ai_config.get('model'),
                 temperature=ai_config.get('temperature'),
                 max_output_tokens=ai_config.get('max_output_tokens'),
-                tools=tools,
-                tool_choice=tool_choice  # Force the model to use our function
+                tools=ai_config.get('tools'),
+                tool_choice=ai_config.get('tool_choice'),
+                text=ai_config.get('text')
             )
 
             # --- Response Parsing and Saving ---
