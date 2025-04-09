@@ -40,6 +40,25 @@ ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',') if host.s
 # - Email backend (e.g., SMTP)
 # - Security settings (CSRF_COOKIE_SECURE, SESSION_COOKIE_SECURE, SECURE_SSL_REDIRECT, etc.)
 
+# Production security settings
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+SECURE_SSL_REDIRECT = True
+SECURE_HSTS_SECONDS = 31536000  # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Production AI Integration Settings - Must be provided through environment variables
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")  # Will raise error if not set in environment
+OPENAI_ORG_ID = os.environ.get("OPENAI_ORG_ID", "")
+
+# Ensure API keys are set
+if not OPENAI_API_KEY:
+    # Log error but don't raise exception to allow app to start
+    # This gives flexibility to have components not dependent on AI still work
+    print("WARNING: OPENAI_API_KEY environment variable not set for production.")
+
 print("DEBUG:", DEBUG)
 print("Loading production settings")
 

@@ -1,6 +1,6 @@
 import logging
 import json
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 
 from celery import shared_task
 from django.utils import timezone
@@ -28,7 +28,8 @@ def _parse_and_save_community_info(shop_result: ShopResult, ai_response_data: Di
     """
     community_data = ai_response_data.get("community", {})
     if not community_data:
-        logger.warning(f"AI response for ShopResult {shop_result.id} missing 'community' key.")
+        logger.warning(f"AI response for ShopResult {
+                       shop_result.id} missing 'community' key.")
         raise ValueError("AI response missing 'community' data.")
 
     # Create or update CommunityInfo
@@ -54,12 +55,13 @@ def _parse_and_save_community_info(shop_result: ShopResult, ai_response_data: Di
             # Note: amenities are handled separately below
         }
     )
-    logger.info(f"{'Created' if created else 'Updated'} CommunityInfo {community_info.id} for ShopResult {shop_result.id}")
+    logger.info(f"{'Created' if created else 'Updated'} CommunityInfo {
+                community_info.id} for ShopResult {shop_result.id}")
 
     # Clear existing related objects before adding new ones to prevent duplicates on update
     community_info.pages.all().delete()
     community_info.floor_plans.all().delete()
-    community_info.community_amenities.clear() # ManyToMany field
+    community_info.community_amenities.clear()  # ManyToMany field
 
     # Create CommunityPage objects
     for page_data in community_data.get('community_pages', []):
@@ -89,14 +91,15 @@ def _parse_and_save_community_info(shop_result: ShopResult, ai_response_data: Di
             amenity_name = amenity_data.get('amenity')
             if amenity_name:
                 amenity, _ = Amenity.objects.get_or_create(name=amenity_name)
-                floor_plan.amenities.add(amenity) # Add to ManyToManyField
+                floor_plan.amenities.add(amenity)  # Add to ManyToManyField
 
     # Handle community amenities
     for amenity_data in community_data.get('community_amenities', []):
         amenity_name = amenity_data.get('amenity')
         if amenity_name:
             amenity, _ = Amenity.objects.get_or_create(name=amenity_name)
-            community_info.community_amenities.add(amenity) # Add to ManyToManyField
+            community_info.community_amenities.add(
+                amenity)  # Add to ManyToManyField
 
 
 @shared_task(bind=True, max_retries=API_RETRY_CONFIG['max_retries'])
@@ -112,7 +115,8 @@ def start_information_gathering_task(self, shop_id: str) -> None:
         logger.error(f"Shop with ID {shop_id} not found. Aborting task.")
         return
     except Target.DoesNotExist:
-        logger.error(f"Target associated with Shop ID {shop_id} not found. Aborting task.")
+        logger.error(f"Target associated with Shop ID {
+                     shop_id} not found. Aborting task.")
         # Optionally update shop status to FAILED here
         shop.status = Shop.Status.FAILED
         shop.end_time = timezone.now()
@@ -128,24 +132,28 @@ def start_information_gathering_task(self, shop_id: str) -> None:
         # --- AI Interaction ---
         logger.info(f"Fetching AI configuration for information gathering.")
         ai_config = get_model_config('information_gathering')
-        api_key = get_api_key(ai_config.get('service', 'openai')) # Default to openai if not specified
+        api_key = get_api_key(ai_config.get('service', 'openai'))
 
         if not api_key:
-            raise ValueError(f"API key for service '{ai_config.get('service')}' not found.")
+            raise ValueError(f"API key for service '{
+                             ai_config.get('service')}' not found.")
 
         # Assuming OpenAI for now, adjust if multiple services are supported
         if ai_config.get('service') == 'openai':
             client = OpenAIClient(api_key=api_key)
-            prompt = PromptTemplates.information_gathering(website=target.website)
+            prompt = PromptTemplates.information_gathering(
+                website=target.website)
 
-            logger.info(f"Sending request to AI for Shop ID: {shop_id}, Target: {target.name}")
+            logger.info(f"Sending request to AI for Shop ID: {
+                        shop_id}, Target: {target.name}")
             # Use the structured output schema defined in ai_config
             tools = ai_config.get('tools', [])
-            tool_choice = {"type": "function", "function": {"name": STRUCTURED_OUTPUT_INFORMATION_GATHERING['format']['name']}}
+            tool_choice = {"type": "function", "function": {
+                "name": STRUCTURED_OUTPUT_INFORMATION_GATHERING['format']['name']}}
 
             # Add the function definition to the tools list
-            tools.append({"type": "function", "function": STRUCTURED_OUTPUT_INFORMATION_GATHERING['format']})
-
+            tools.append(
+                {"type": "function", "function": STRUCTURED_OUTPUT_INFORMATION_GATHERING['format']})
 
             ai_response_str = client.generate_response(
                 prompt=prompt,
@@ -153,66 +161,79 @@ def start_information_gathering_task(self, shop_id: str) -> None:
                 temperature=ai_config.get('temperature'),
                 max_tokens=ai_config.get('max_tokens'),
                 tools=tools,
-                tool_choice=tool_choice # Force the model to use our function
+                tool_choice=tool_choice  # Force the model to use our function
             )
 
             # --- Response Parsing and Saving ---
-            logger.info(f"Received AI response for Shop ID: {shop_id}. Parsing...")
+            logger.info(f"Received AI response for Shop ID: {
+                        shop_id}. Parsing...")
 
             # The response might be nested if using function calling
             # Adjust parsing based on actual OpenAI API response structure for function calls
             try:
                 # Assuming the response content contains the JSON string from the function call
                 # This needs verification based on actual API output
-                response_data = json.loads(ai_response_str) # Or access nested structure like response.choices[0].message.tool_calls[0].function.arguments
-                if isinstance(response_data, str): # Sometimes it's double-encoded
+                # Or access nested structure like response.choices[0].message.tool_calls[0].function.arguments
+                response_data = json.loads(ai_response_str)
+                if isinstance(response_data, str):  # Sometimes it's double-encoded
                     response_data = json.loads(response_data)
 
             except json.JSONDecodeError as json_err:
-                logger.error(f"Failed to decode JSON response for Shop ID {shop_id}: {json_err}")
+                logger.error(f"Failed to decode JSON response for Shop ID {
+                             shop_id}: {json_err}")
                 logger.error(f"Raw AI Response: {ai_response_str}")
-                raise ValueError(f"Invalid JSON received from AI: {json_err}") from json_err
+                raise ValueError(f"Invalid JSON received from AI: {
+                                 json_err}") from json_err
             except (AttributeError, IndexError, KeyError) as e:
-                 logger.error(f"Error accessing expected structure in AI response for Shop ID {shop_id}: {e}")
-                 logger.error(f"Raw AI Response: {ai_response_str}")
-                 raise ValueError(f"Unexpected AI response structure: {e}") from e
-
+                logger.error(f"Error accessing expected structure in AI response for Shop ID {
+                             shop_id}: {e}")
+                logger.error(f"Raw AI Response: {ai_response_str}")
+                raise ValueError(
+                    f"Unexpected AI response structure: {e}") from e
 
             # Use a transaction to ensure atomicity when creating related objects
             with transaction.atomic():
                 # Create or get the ShopResult linked to the Shop
                 shop_result, _ = ShopResult.objects.get_or_create(shop=shop)
-                logger.info(f"Parsing and saving community info for ShopResult {shop_result.id}")
+                logger.info(f"Parsing and saving community info for ShopResult {
+                            shop_result.id}")
                 _parse_and_save_community_info(shop_result, response_data)
 
             # Update shop status to COMPLETED
             shop.status = Shop.Status.COMPLETED
             shop.end_time = timezone.now()
             shop.save(update_fields=['status', 'end_time', 'updated_at'])
-            logger.info(f"Successfully completed information gathering for Shop ID: {shop_id}")
+            logger.info(
+                f"Successfully completed information gathering for Shop ID: {shop_id}")
 
         else:
             # Handle other potential AI services if needed
-            logger.error(f"Unsupported AI service configured: {ai_config.get('service')}")
-            raise NotImplementedError(f"AI service '{ai_config.get('service')}' not implemented.")
-
+            logger.error(f"Unsupported AI service configured: {
+                         ai_config.get('service')}")
+            raise NotImplementedError(
+                f"AI service '{ai_config.get('service')}' not implemented.")
 
     except Exception as e:
-        logger.exception(f"Error during information gathering task for Shop ID {shop_id}: {e}")
+        logger.exception(
+            f"Error during information gathering task for Shop ID {shop_id}: {e}")
         # Update shop status to FAILED
         try:
             shop.status = Shop.Status.FAILED
             shop.end_time = timezone.now()
             shop.save(update_fields=['status', 'end_time', 'updated_at'])
         except Exception as save_err:
-            logger.error(f"Additionally failed to update shop status to FAILED for Shop ID {shop_id}: {save_err}")
+            logger.error(f"Additionally failed to update shop status to FAILED for Shop ID {
+                         shop_id}: {save_err}")
 
         # Retry logic for Celery task based on the exception
         try:
             # Default retry delay from config, exponential backoff
-            retry_delay = API_RETRY_CONFIG['retry_delay'] * (API_RETRY_CONFIG['backoff_factor'] ** self.request.retries)
-            logger.warning(f"Retrying task for Shop ID {shop_id} (Attempt {self.request.retries + 1}/{self.max_retries}) in {retry_delay}s...")
+            retry_delay = API_RETRY_CONFIG['retry_delay'] * \
+                (API_RETRY_CONFIG['backoff_factor'] ** self.request.retries)
+            logger.warning(f"Retrying task for Shop ID {shop_id} (Attempt {
+                           self.request.retries + 1}/{self.max_retries}) in {retry_delay}s...")
             raise self.retry(exc=e, countdown=retry_delay)
         except self.MaxRetriesExceededError:
-            logger.error(f"Max retries exceeded for information gathering task for Shop ID {shop_id}.")
+            logger.error(
+                f"Max retries exceeded for information gathering task for Shop ID {shop_id}.")
             # Final failure state is already set above

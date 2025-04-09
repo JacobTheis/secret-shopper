@@ -41,6 +41,16 @@ class Shop(models.Model):
         db_index=True,
         help_text="The current status of the shop.",
     )
+    start_time = models.DateTimeField(
+        null=True,
+        blank=True, 
+        help_text="When the shop process was started."
+    )
+    end_time = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the shop process was completed or failed."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

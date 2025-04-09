@@ -209,22 +209,13 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
     }
 }
 
-# Default configuration for OpenAI
-OPENAI_DEFAULT_CONFIG = {
-    'api_version': 'v1',
-    'default_model': 'gpt-4o',
-    'default_temperature': 1,
-    'default_max_tokens': 10000,
-    'request_timeout': 60,  # seconds
-}
-
 # Secret shop specific configurations
 SECRET_SHOP_AI_CONFIG = {
     'information_gathering': {
         'service': 'openai',
         'model': 'gpt-4o',
         'temperature': 1,
-        'max_tokens': 10000,
+        'max_output_tokens': 10000,
         'tools': [
             {
                 'type': 'web_search_preview',
@@ -244,28 +235,28 @@ SECRET_SHOP_AI_CONFIG = {
         'service': 'openai',
         'model': 'gpt-4o-mini',
         'temperature': 1,
-        'max_tokens': 1000,
+        'max_output_tokens': 1000,
         'tools': [],
     },
     'initial_inquiry': {
         'service': 'openai',
         'model': 'gpt-4o-mini',
         'temperature': 1,
-        'max_tokens': 1000,
+        'max_output_tokens': 1000,
         'tools': [],
     },
     'response_analysis': {
         'service': 'openai',
         'model': 'gpt-4o-mini',
         'temperature': 1,
-        'max_tokens': 1000,
+        'max_output_tokens': 1000,
         'tools': [],
     },
     'followup_generation': {
         'service': 'openai',
         'model': 'gpt-4o-mini',
         'temperature': 1,
-        'max_tokens': 1000,
+        'max_output_tokens': 1000,
         'tools': [],
     },
 }
@@ -328,6 +319,6 @@ def get_model_config(task_type: str) -> Dict[str, Any]:
             'service': 'openai',
             'model': 'gpt-4o-mini',
             'temperature': 1,
-            'max_tokens': 1000,
+            'max_output_tokens': 1000,
             'tools': [],
         }

@@ -35,3 +35,7 @@ DATABASES = {
         "PORT": os.getenv("DB_PORT", "5432"),
     }
 }
+
+# Development OpenAI Settings - Override with a test key or specific development key if needed
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY_DEV", OPENAI_API_KEY)
+OPENAI_ORG_ID = os.environ.get("OPENAI_ORG_ID_DEV", OPENAI_ORG_ID)
