@@ -3,11 +3,18 @@ from django.views.generic import (
 )
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
+from django.views import View
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.urls import reverse_lazy
 from django.contrib import messages
+from django.utils import timezone # Import timezone
 from .models import Target
 from .forms import TargetForm
 # Import the necessary models from the 'shops' app
 from apps.shops.models import Shop, ShopResult, CommunityInfo, Amenity, CommunityPage, FloorPlan
+# Placeholder for the actual Celery task - adjust the import path as needed
+# from apps.shops.tasks import start_information_gathering_task
 
 
 class TargetsView(LoginRequiredMixin, ListView):
@@ -144,3 +151,54 @@ class TargetDeleteView(LoginRequiredMixin, DeleteView):
     def delete(self, request, *args, **kwargs):
         messages.success(request, 'Target deleted successfully.')
         return super().delete(request, *args, **kwargs)
+
+
+class StartShopView(LoginRequiredMixin, View):
+    """Handles the request to start the information gathering phase for a target."""
+    login_url = '/accounts/login/'
+    redirect_field_name = 'next'
+
+    def post(self, request, *args, **kwargs):
+        target_pk = kwargs.get('pk')
+        target = get_object_or_404(Target, pk=target_pk)
+
+        # Check if an info gathering shop is already in progress for this target
+        # You might want to refine this logic based on your exact requirements
+        # (e.g., allow restarting, check for recent failures, etc.)
+        existing_shop = Shop.objects.filter(
+            target=target,
+            status__in=[Shop.Status.PENDING, Shop.Status.GATHERING_INFO]
+        ).first()
+
+        if existing_shop:
+            messages.warning(request, f"An information gathering process is already running or pending for '{target.name}'.")
+        else:
+            # Create a new shop instance
+            new_shop = Shop.objects.create(
+                target=target,
+                user=request.user, # Associate with the user initiating the shop
+                status=Shop.Status.PENDING, # Start as pending, task will update
+                start_time=timezone.now() # Record start time
+                # end_time will be set upon completion
+            )
+
+            # Trigger the asynchronous task (replace with actual task import and call)
+            # start_information_gathering_task.delay(new_shop.id)
+            # print(f"Placeholder: Triggering info gathering task for Shop ID: {new_shop.id}") # Placeholder action
+
+            # For now, simulate task start by setting status (REMOVE THIS IN PRODUCTION)
+            new_shop.status = Shop.Status.GATHERING_INFO
+            new_shop.save()
+            # --- End Simulation ---
+
+            messages.success(request, f"Started information gathering for '{target.name}'.")
+
+        # Redirect back to the target detail page
+        return redirect('targets:detail', pk=target.pk)
+
+    def get(self, request, *args, **kwargs):
+        # Handle GET requests by redirecting away or showing an error,
+        # as this action should only be triggered by POST.
+        target_pk = kwargs.get('pk')
+        messages.error(request, "Invalid request method.")
+        return redirect('targets:detail', pk=target_pk)

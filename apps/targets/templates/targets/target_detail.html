@@ -20,11 +20,14 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <h1 class="card-title h5 mb-0">{{ target.name }}</h1>
             <div>
-                <a href="{% url 'targets:update' target.pk %}" class="btn btn-primary btn-sm">Edit Target</a>
-                <a href="{% url 'targets:delete' target.pk %}" class="btn btn-danger btn-sm">Delete Target</a>
-                <a href="{% url 'targets:index' %}" class="btn btn-secondary btn-sm">Back to List</a>
-                {# Add button to trigger a new shop? #}
-                {# <a href="#" class="btn btn-success btn-sm">Start New Shop</a> #}
+                {# Form to trigger the info gathering shop #}
+                <form action="{% url 'targets:start_shop' target.pk %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success btn-sm">Start Info Gathering</button>
+                </form>
+                <a href="{% url 'targets:update' target.pk %}" class="btn btn-primary btn-sm ms-1">Edit Target</a>
+                <a href="{% url 'targets:delete' target.pk %}" class="btn btn-danger btn-sm ms-1">Delete Target</a>
+                <a href="{% url 'targets:index' %}" class="btn btn-secondary btn-sm ms-1">Back to List</a>
             </div>
         </div>
         <div class="card-body">

@@ -14,4 +14,6 @@ urlpatterns = [
     path('<uuid:pk>/update/', views.TargetUpdateView.as_view(), name='update'),
     # Delete target
     path('<uuid:pk>/delete/', views.TargetDeleteView.as_view(), name='delete'),
+    # URL to trigger the start of a new shop's info gathering phase
+    path('<uuid:pk>/start-shop/', views.StartShopView.as_view(), name='start_shop'),
 ]
