@@ -26,7 +26,7 @@ def _parse_and_save_community_info(shop_result: ShopResult, ai_response_data: Di
     This is a complex function and needs careful implementation based on the exact
     structure of ai_response_data matching STRUCTURED_OUTPUT_INFORMATION_GATHERING.
     """
-    community_data = ai_response_data.get("community", {})
+    community_data = ai_response_data.get("properties", {})
     if not community_data:
         logger.warning(f"AI response for ShopResult {
                        shop_result.shop_id} missing 'community' key.")
