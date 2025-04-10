@@ -7,13 +7,21 @@ class Target(models.Model):
     """Represents a target property for a secret shop."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(_("Property Name"), max_length=255)
-    street_address = models.CharField(_("Street Address"), max_length=255)
-    city = models.CharField(_("City"), max_length=100)
-    state = models.CharField(_("State"), max_length=50)
-    zip_code = models.CharField(_("Zip Code"), max_length=20)
+    name = models.CharField(_("Property Name"), max_length=255) # Already required
+    street_address = models.CharField(
+        _("Street Address"), max_length=255, blank=True, null=True # Make optional
+    )
+    city = models.CharField(
+        _("City"), max_length=100, blank=True, null=True # Make optional
+    )
+    state = models.CharField(
+        _("State"), max_length=50, blank=True, null=True # Make optional
+    )
+    zip_code = models.CharField(
+        _("Zip Code"), max_length=20, blank=True, null=True # Make optional
+    )
     phone_number = models.CharField(
-        _("Phone Number"), max_length=20, blank=True, null=True
+        _("Phone Number"), max_length=20, blank=True, null=True # Already optional
     )
     email_address = models.EmailField(
         _("Email Address"), max_length=254, blank=True, null=True
