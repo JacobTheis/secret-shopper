@@ -148,7 +148,8 @@ def start_information_gathering_task(self, shop_id: str) -> None:
                         shop_id}, Target: {target.name}")
 
             # Generate the prompt using the PromptTemplates class
-            prompt = PromptTemplates.information_gathering
+            prompt = PromptTemplates.information_gathering()
+            user_input = target.website
 
             model_input = [
                 {
@@ -165,7 +166,7 @@ def start_information_gathering_task(self, shop_id: str) -> None:
                     "content": [
                         {
                             "type": "input_text",
-                            "text": target.website
+                            "text": user_input
                         }
                     ]
                 }

@@ -23,13 +23,13 @@ class OpenAIClient:
         self.client = OpenAI(api_key=self.api_key)
 
     def generate_response(self,
-                          input: str,
-                          model: str = "gpt-4o-mini",
+                          input: List[Dict[str, Any]],
+                          model: str = "gpt-4o",
                           temperature: float = 1,
                           max_output_tokens: int = 5000,
-                          tools: Optional[List[str]] = [],
-                          tool_choice: Optional[str] = {},
-                          text: Optional[str] = None,
+                          tools: Optional[List[Dict[str, Any]]] = [],
+                          tool_choice: Optional[Dict[str, Any]] = None,
+                          text: Optional[Dict[str, Any]] = None,
                           ) -> str:
         """Generate a text response from the AI.
 
@@ -45,6 +45,7 @@ class OpenAIClient:
         try:
             response = self.client.responses.create(
                 model=model,
+                temperature=temperature,
                 input=input,
                 max_output_tokens=max_output_tokens,
                 tools=tools,

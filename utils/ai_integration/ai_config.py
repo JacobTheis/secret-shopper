@@ -222,7 +222,7 @@ SECRET_SHOP_AI_CONFIG = {
     'information_gathering': {
         'service': 'openai',
         'model': 'gpt-4o',
-        'temperature': 1,
+        'temperature': 2,
         'max_output_tokens': 10000,
         'tools': [
             {

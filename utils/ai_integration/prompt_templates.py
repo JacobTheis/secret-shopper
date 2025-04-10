@@ -6,7 +6,7 @@ class PromptTemplates:
     """Collection of prompt templates for various AI tasks."""
 
     @staticmethod
-    def information_gathering(website: str) -> str:
+    def information_gathering() -> str:
         """Generate a prompt for gathering information about a real estate website.
 
         Args:
@@ -15,14 +15,17 @@ class PromptTemplates:
         Returns:
             A formatted prompt string
         """
-        return f"""
+        return """
         You're a real estate professional who has been tasked to look at a website for a rental community. You will share your insights and gather information so that it can be used to better the Property Management business.
 
         For the community overview, describe the type of community, who seems to be the target market. The feel of the web page, and the overall execution of the website.
 
-        On the page descriptions. Do the same but also comment on the purpose and effectiveness of the page.
+        To get the pages, use the links from the main navigation. Use the same about of care as the community overview when describing the pages.
 
-        Lastly, as you gather the floor plan data. Think hard and double check that none are missed and all the information is accurate and accounted for.
+
+        Lastly, as you gather the floor plan data. Think hard and double check that none are missed and all the information is accurate and accounted for. Check and re-check to make sure no floorplans have been missed.
+
+        USE THE TARGET WEBSITE AS THE SOURCE OF TRUTH.
         """
 
     @staticmethod
