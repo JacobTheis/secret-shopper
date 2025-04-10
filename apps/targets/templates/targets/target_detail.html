@@ -31,12 +31,12 @@
             </div>
         </div>
         <div class="card-body">
-            <p><strong>Address:</strong> {{ target.street_address|default:"N/A" }}, {{ target.city|default:"N/A" }}, {{ target.state|default:"N/A" }} {{ target.zip_code|default:"N/A" }}</p>
-            <p><strong>Email:</strong> {{ target.email_address|default:"N/A" }}</p>
-            <p><strong>Phone:</strong> {{ target.phone_number|default:"N/A" }}</p>
+            <p><strong>Address:</strong> {{ target.street_address|default:"" }} {{ target.city|default:"" }} {{ target.state|default:"" }} {{ target.zip_code|default:"" }}</p>
+            <p><strong>Email:</strong> {{ target.email_address|default:"" }}</p>
+            <p><strong>Phone:</strong> {{ target.phone_number|default:"" }}</p>
             <p><strong>Website:</strong> {% if target.website %}<a href="{{ target.website }}" target="_blank" rel="noopener noreferrer">{{ target.website }}</a>{% else %}N/A{% endif %}</p>
-            <p><strong>Owner(s):</strong> {{ target.owners|default:"N/A" }}</p>
-            <p><strong>Property Manager:</strong> {{ target.property_manager|default:"N/A" }}</p>
+            <p><strong>Owner(s):</strong> {{ target.owners|default:"" }}</p>
+            <p><strong>Property Manager:</strong> {{ target.property_manager|default:"" }}</p>
         </div>
         {# Buttons moved to card header #}
     </div>
