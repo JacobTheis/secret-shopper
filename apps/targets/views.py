@@ -16,6 +16,7 @@ from .forms import TargetForm
 from apps.shops.models import Shop, ShopResult, CommunityInfo, Amenity, CommunityPage, FloorPlan
 # Import the Celery task for starting information gathering
 from apps.shops.tasks import start_information_gathering_task
+from kombu.exceptions import OperationalError # Add this import
 
 logger = logging.getLogger(__name__)
 
@@ -181,10 +182,19 @@ class StartShopView(LoginRequiredMixin, View):
                 # created_at and updated_at fields are auto-populated
             )
 
-            # Trigger the asynchronous task
-            start_information_gathering_task.delay(new_shop.id)
-
-            messages.success(request, f"Started information gathering for '{target.name}'. This may take a few minutes.")
+            try:
+                # Trigger the asynchronous task
+                start_information_gathering_task.delay(new_shop.id)
+                messages.success(request, f"Started information gathering for '{target.name}'. This may take a few minutes.")
+            except OperationalError:
+                # If Celery can't connect to the broker (Redis)
+                messages.error(request, "Could not start information gathering. The task processing service is currently unavailable. Please try again later or contact an administrator.")
+                # Optionally, you might want to change the shop status to FAILED or delete it
+                # For example:
+                # new_shop.status = Shop.Status.FAILED
+                # new_shop.save()
+                # or new_shop.delete() 
+                # For now, we'll just show an error message. The shop object will remain with PENDING status.
 
         # Redirect back to the target detail page
         return redirect('targets:detail', pk=target.pk)
