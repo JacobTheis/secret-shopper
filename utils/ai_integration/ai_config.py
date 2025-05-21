@@ -25,7 +25,7 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
                     "description": "The link to the community's homepage or relevant page."
                 },
                 "application_fee": {
-                    "type": "number",
+                    "type": "string",
                     "description": "The fee charged to prospects for applying to live in the community."
                 },
                 "application_fee_source": {
@@ -33,7 +33,7 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
                     "description": "The source url of the application fee. This is usually a link to the payment processor."
                 },
                 "administration_fee": {
-                    "type": "number",
+                    "type": "string",
                     "description": "The one time fee charged to prospects for administrative purposes."
                 },
                 "administration_fee_source": {
@@ -41,8 +41,8 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
                     "description": "The source url of the administration fee. This is usually a link to the payment processor."
                 },
                 "membership_fee": {
-                    "type": "number",
-                    "description": "The recurring fee charged to residents for membership in the community. Sometimes called a resident benefits package or amenity package."
+                    "type": "string",
+                    "description": "The recurring fee charged to residents for membership in the community or renting a property in the community. Sometimes called a resident benefits package or amenity package."
                 },
                 "membership_fee_source": {
                     "type": "string",
@@ -71,6 +71,26 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
                 "resident_portal_software_provider": {
                     "type": "string",
                     "description": "The software provider for the resident portal."
+                },
+                "street_address": {
+                    "type": "string",
+                    "description": "The street address of the community or primary office."
+                },
+                "city": {
+                    "type": "string",
+                    "description": "The city where the community or primary office is located."
+                },
+                "state": {
+                    "type": "string",
+                    "description": "The state where the community or primary office is located."
+                },
+                "zip_code": {
+                    "type": "string",
+                    "description": "The zip code of the community or primary office."
+                },
+                "special_offers": {
+                    "type": "string",
+                    "description": "Any special offers or promotions currently available."
                 },
                 "community_pages": {
                     "type": "array",
@@ -141,6 +161,10 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
                                 "type": "number",
                                 "description": "The security deposit required for the floor plan."
                             },
+                            "num_available_units": {
+                                "type": "number",
+                                "description": "The number of available units for the floor plan."
+                            },
                             "floor_plan_amenities": {
                                 "type": "array",
                                 "description": "A list of amenities available in the floor plan.",
@@ -169,6 +193,7 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
                             "min_rental_price",
                             "max_rental_price",
                             "security_deposit",
+                            "num_available_units",
                             "floor_plan_amenities"
                         ],
                         "additionalProperties": False
@@ -208,6 +233,11 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
                 "self_showings_source",
                 "office_hours",
                 "resident_portal_software_provider",
+                "special_offers",
+                "street_address",
+                "city",
+                "state",
+                "zip_code",
                 "community_pages",
                 "community_amenities",
                 "floor_plans"
@@ -221,7 +251,7 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
 SECRET_SHOP_AI_CONFIG = {
     'information_gathering': {
         'service': 'openai',
-        'model': 'gpt-4o',
+        'model': 'gpt-4.1-mini',
         'temperature': 2,
         'max_output_tokens': 10000,
         'tools': [
@@ -231,7 +261,7 @@ SECRET_SHOP_AI_CONFIG = {
                     'type': 'approximate',
                     'country': 'US'
                 },
-                'search_context_size': 'medium'
+                'search_context_size': 'high',
             }
         ],
         'tool_choice': {
@@ -241,7 +271,7 @@ SECRET_SHOP_AI_CONFIG = {
     },
     'persona_generation': {
         'service': 'openai',
-        'model': 'gpt-4o-mini',
+        'model': 'gpt-4.1',
         'temperature': 1,
         'max_output_tokens': 1000,
         'tools': [],

@@ -43,7 +43,7 @@ class Shop(models.Model):
     )
     start_time = models.DateTimeField(
         null=True,
-        blank=True, 
+        blank=True,
         help_text="When the shop process was started."
     )
     end_time = models.DateTimeField(
@@ -160,9 +160,8 @@ class CommunityInfo(models.Model):
         null=True,
         help_text="The source URL for the administration fee.",
     )
-    membership_fee = models.DecimalField(
-        max_digits=8,
-        decimal_places=2,
+    membership_fee = models.CharField(
+        max_length=500,
         null=True,
         blank=True,
         help_text="Recurring membership or resident benefit package fee.",
@@ -227,7 +226,8 @@ class CommunityPage(models.Model):
         related_name="pages",
         help_text="The community this page belongs to.",
     )
-    name = models.CharField(max_length=255, help_text="The name or title of the page.")
+    name = models.CharField(
+        max_length=255, help_text="The name or title of the page.")
     overview = models.TextField(
         blank=True, help_text="A brief overview or description of the page."
     )
@@ -254,7 +254,8 @@ class FloorPlan(models.Model):
         related_name="floor_plans",
         help_text="The community this floor plan belongs to.",
     )
-    name = models.CharField(max_length=255, help_text="The name of the floor plan.")
+    name = models.CharField(
+        max_length=255, help_text="The name of the floor plan.")
     beds = models.PositiveSmallIntegerField(
         null=True, blank=True, help_text="Number of bedrooms."
     )

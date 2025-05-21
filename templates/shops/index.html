@@ -62,7 +62,7 @@
                                         {% endif %}
                                         
                                         {% if shop.status == 'COMPLETED' %}
-                                            <a href="#" class="btn btn-sm btn-primary">View Results</a>
+                                            <a href="{% url 'shops:results' shop.id %}" class="btn btn-sm btn-primary">View Results</a>
                                         {% endif %}
                                     </td>
                                 </tr>
