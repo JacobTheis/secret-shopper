@@ -23,21 +23,40 @@ class ShopAdmin(admin.ModelAdmin):
     search_fields = ("target__name", "user__username", "persona__name")
     readonly_fields = ("created_at", "updated_at")
     list_per_page = 25
+    # Add the new method to list_display
+    list_display = (
+        "id",
+        "user",
+        "persona",
+        "target",
+        "status",
+        "view_shop_results_link",  # Added this link
+        "created_at",
+        "updated_at",
+    )
 
-    @admin.display(description="Community Info")
-    def get_community_info_link(self, obj):
-        """Provide a link to the related CommunityInfo admin page."""
-        # Ensure reverse is imported at the top: from django.urls import reverse
+    @admin.display(description="View Results")
+    def view_shop_results_link(self, obj: Shop): # obj is a Shop instance
+        """Provide a link to the CommunityInfo admin page for this shop's results."""
         try:
-            info = obj.community_info
-            if info:
-                url = reverse(
-                    "admin:shops_communityinfo_change", args=[info.pk]
-                )
-                return format_html('<a href="{}">View/Edit Details</a>', url)
+            # obj.result accesses the related ShopResult instance.
+            # Raises ShopResult.DoesNotExist if no ShopResult is linked to this Shop.
+            shop_result_instance = obj.result
+            
+            # shop_result_instance.community_info accesses the related CommunityInfo instance.
+            # Raises CommunityInfo.DoesNotExist if no CommunityInfo is linked to this ShopResult.
+            community_info_instance = shop_result_instance.community_info
+            
+            url = reverse(
+                "admin:shops_communityinfo_change", args=[community_info_instance.pk]
+            )
+            # The link text "View/Edit Details" is fine as it leads to the CommunityInfo edit page.
+            return format_html('<a href="{}">View/Edit Details</a>', url)
+        except ShopResult.DoesNotExist:
+            return "Results not yet available"
         except CommunityInfo.DoesNotExist:
-            pass
-        return "No Community Info"
+            # This case means ShopResult exists but CommunityInfo was not created/linked.
+            return "Community data not found for results"
 
 # Optional: Register FloorPlan directly if needed for separate management/filtering
 # @admin.register(FloorPlan)
