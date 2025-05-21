@@ -172,6 +172,38 @@ def start_information_gathering_task(self, shop_id: str) -> None:
                 }
             ]
 
+            initial_ai_response_str = client.generate_response(
+                input=model_input,
+                model=ai_config.get('model'),
+                temperature=ai_config.get('temperature'),
+                max_output_tokens=ai_config.get('max_output_tokens'),
+                tools=ai_config.get('tools'),
+                tool_choice=ai_config.get('tool_choice'),
+                text=ai_config.get('text')
+            )
+
+            update_prompt = PromptTemplates.information_gathering_follow_up()
+
+            model_input.append({
+                "role": "assistant",
+                "content": [
+                    {
+                        "type": "output_text",
+                        "text": initial_ai_response_str
+                    }
+                ]
+            })
+
+            model_input.append({
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": update_prompt
+                    }
+                ]
+            })
+
             ai_response_str = client.generate_response(
                 input=model_input,
                 model=ai_config.get('model'),

@@ -25,7 +25,7 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
                     "description": "The link to the community's homepage or relevant page."
                 },
                 "application_fee": {
-                    "type": "string",
+                    "type": "number",
                     "description": "The fee charged to prospects for applying to live in the community."
                 },
                 "application_fee_source": {
@@ -33,7 +33,7 @@ STRUCTURED_OUTPUT_INFORMATION_GATHERING = {
                     "description": "The source url of the application fee. This is usually a link to the payment processor."
                 },
                 "administration_fee": {
-                    "type": "string",
+                    "type": "number",
                     "description": "The one time fee charged to prospects for administrative purposes."
                 },
                 "administration_fee_source": {

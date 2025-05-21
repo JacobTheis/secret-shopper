@@ -29,6 +29,21 @@ class PromptTemplates:
         """
 
     @staticmethod
+    def information_gathering_follow_up() -> str:
+        """Generate a prompt to ask the AI agent to double check fields that it often misses on the first pass.
+
+        Args:
+            Response from the infomation gathing
+
+        Returns:
+            A formatted prompt string
+
+        """
+        return """
+        Search again. Add any floorplans or fees that you missed.
+        """
+
+    @staticmethod
     def initial_inquiry(persona: Dict[str, Any], property_info: Dict[str, Any]) -> str:
         """Generate a prompt for creating the initial inquiry email.
 
