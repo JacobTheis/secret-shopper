@@ -3,3 +3,5 @@ python-dotenv
 celery
 redis
 openai
+pydantic-ai
+anthropic
