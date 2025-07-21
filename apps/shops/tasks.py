@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 def _parse_and_save_community_info(shop_result: ShopResult, community_info_data: CommunityInformation) -> None:
     """
     Parses the PydanticAI response data and saves it to the CommunityInfo related models.
-    
+
     Args:
         shop_result: The ShopResult instance to associate the data with
         community_info_data: The CommunityInformation Pydantic model instance
@@ -45,7 +45,8 @@ def _parse_and_save_community_info(shop_result: ShopResult, community_info_data:
             'resident_portal_provider': community_info_data.resident_portal_software_provider,
         }
     )
-    logger.info(f"{'Created' if created else 'Updated'} CommunityInfo {community_info.id} for ShopResult {shop_result.shop_id}")
+    logger.info(f"{'Created' if created else 'Updated'} CommunityInfo {
+                community_info.id} for ShopResult {shop_result.shop_id}")
 
     # Clear existing related objects before adding new ones to prevent duplicates on update
     community_info.pages.all().delete()
@@ -78,13 +79,15 @@ def _parse_and_save_community_info(shop_result: ShopResult, community_info_data:
         # Handle floor plan amenities
         for amenity_data in fp_data.floor_plan_amenities:
             if amenity_data.amenity:
-                amenity, _ = Amenity.objects.get_or_create(name=amenity_data.amenity)
+                amenity, _ = Amenity.objects.get_or_create(
+                    name=amenity_data.amenity)
                 floor_plan.amenities.add(amenity)
 
     # Handle community amenities
     for amenity_data in community_info_data.community_amenities:
         if amenity_data.amenity:
-            amenity, _ = Amenity.objects.get_or_create(name=amenity_data.amenity)
+            amenity, _ = Amenity.objects.get_or_create(
+                name=amenity_data.amenity)
             community_info.community_amenities.add(amenity)
 
 
@@ -94,7 +97,7 @@ def start_information_gathering_task(self, shop_id: str) -> None:
     Celery task to perform AI-driven information gathering for a given Shop using PydanticAI.
     """
     logger.info(f"Starting information gathering task for Shop ID: {shop_id}")
-    
+
     try:
         shop = Shop.objects.select_related('target').get(id=shop_id)
         target = shop.target
@@ -102,7 +105,8 @@ def start_information_gathering_task(self, shop_id: str) -> None:
         logger.error(f"Shop with ID {shop_id} not found. Aborting task.")
         return
     except Target.DoesNotExist:
-        logger.error(f"Target associated with Shop ID {shop_id} not found. Aborting task.")
+        logger.error(f"Target associated with Shop ID {
+                     shop_id} not found. Aborting task.")
         shop.status = Shop.Status.ERROR
         shop.end_time = timezone.now()
         shop.save(update_fields=['status', 'end_time', 'updated_at'])
@@ -116,47 +120,26 @@ def start_information_gathering_task(self, shop_id: str) -> None:
     async def run_information_gathering():
         """Async function to run the information gathering with PydanticAI agents."""
         try:
-            # Create the information gathering service
-            service = create_information_gathering_service()
-            
-            logger.info(f"Extracting community info for Shop ID: {shop_id}, Target: {target.name}")
-            
-            # Initial extraction
-            initial_prompt = f"""
-            You're a real estate professional analyzing this rental community website: {target.website}
-            
-            For the community overview, describe the type of community, target market, website feel, and overall execution.
-            
-            For pages, use links from the main navigation and provide careful descriptions.
-            
-            For floor plan data, be thorough - double check that no floor plans are missed and all information is accurate.
-            
-            Use the target website as your source of truth.
-            """
-            
-            initial_result = await service.run(initial_prompt)
+            # Create the information gathering agent
+            agent = create_information_gathering_service()
+
+            logger.info(f"Extracting community info for Shop ID: {
+                        shop_id}, Target: {target.name}")
+
+            # Initial extraction using agent method
+            initial_result = await agent.extract_community_info(target.website)
             logger.info(f"Completed initial extraction for Shop ID: {shop_id}")
-            
-            # Follow-up extraction for completeness
-            followup_prompt = f"""
-            You previously analyzed this rental community website: {target.website}
-            
-            Here's what you found:
-            - Community: {initial_result.name}
-            - Floor plans found: {len(initial_result.floor_plans)}
-            - Pages found: {len(initial_result.community_pages)}
-            
-            Search again and add any floor plans or fees that you missed in the initial pass.
-            Focus on completeness and accuracy.
-            """
-            
-            final_result = await service.run(followup_prompt)
-            logger.info(f"Completed follow-up extraction for Shop ID: {shop_id}")
-            
+
+            # Follow-up extraction for completeness using agent method
+            final_result = await agent.gather_additional_info(target.website, initial_result)
+            logger.info(
+                f"Completed follow-up extraction for Shop ID: {shop_id}")
+
             return final_result
-            
+
         except Exception as e:
-            logger.error(f"Error in async information gathering for Shop ID {shop_id}: {str(e)}")
+            logger.error(f"Error in async information gathering for Shop ID {
+                         shop_id}: {str(e)}")
             raise
 
     try:
@@ -164,10 +147,11 @@ def start_information_gathering_task(self, shop_id: str) -> None:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            community_data = loop.run_until_complete(run_information_gathering())
+            community_data = loop.run_until_complete(
+                run_information_gathering())
         finally:
             loop.close()
-        
+
         # Use a transaction to ensure atomicity when creating related objects
         with transaction.atomic():
             # Create or get the ShopResult linked to the Shop
@@ -177,32 +161,39 @@ def start_information_gathering_task(self, shop_id: str) -> None:
             else:
                 logger.info(f"Found existing ShopResult for Shop ID {shop_id}")
 
-            logger.info(f"Parsing and saving community info for ShopResult {shop_result.shop_id}")
+            logger.info(f"Parsing and saving community info for ShopResult {
+                        shop_result.shop_id}")
             _parse_and_save_community_info(shop_result, community_data)
 
         # Update shop status to COMPLETED
         shop.status = Shop.Status.COMPLETED
         shop.end_time = timezone.now()
         shop.save(update_fields=['status', 'end_time', 'updated_at'])
-        logger.info(f"Successfully completed information gathering for Shop ID: {shop_id}")
+        logger.info(
+            f"Successfully completed information gathering for Shop ID: {shop_id}")
 
     except Exception as e:
-        logger.exception(f"Error during information gathering task for Shop ID {shop_id}: {e}")
-        
+        logger.exception(
+            f"Error during information gathering task for Shop ID {shop_id}: {e}")
+
         # Update shop status to ERROR
         try:
             shop.status = Shop.Status.ERROR
             shop.end_time = timezone.now()
             shop.save(update_fields=['status', 'end_time', 'updated_at'])
         except Exception as save_err:
-            logger.error(f"Failed to update shop status to ERROR for Shop ID {shop_id}: {save_err}")
+            logger.error(f"Failed to update shop status to ERROR for Shop ID {
+                         shop_id}: {save_err}")
 
         # Retry logic for Celery task
         try:
             # Exponential backoff retry delay
-            retry_delay = RETRY_CONFIG['retry_delay'] * (RETRY_CONFIG['backoff_factor'] ** self.request.retries)
-            logger.warning(f"Retrying task for Shop ID {shop_id} (Attempt {self.request.retries + 1}/{self.max_retries}) in {retry_delay}s...")
+            retry_delay = RETRY_CONFIG['retry_delay'] * \
+                (RETRY_CONFIG['backoff_factor'] ** self.request.retries)
+            logger.warning(f"Retrying task for Shop ID {shop_id} (Attempt {
+                           self.request.retries + 1}/{self.max_retries}) in {retry_delay}s...")
             raise self.retry(exc=e, countdown=retry_delay)
         except self.MaxRetriesExceededError:
-            logger.error(f"Max retries exceeded for information gathering task for Shop ID {shop_id}.")
+            logger.error(
+                f"Max retries exceeded for information gathering task for Shop ID {shop_id}.")
             # Final failure state is already set above

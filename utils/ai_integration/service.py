@@ -152,8 +152,8 @@ class MultiProviderAIService:
 # Convenience functions for creating service instances
 def create_information_gathering_service():
     """Create an information gathering service instance."""
-    from .schemas import CommunityInformation
-    return MultiProviderAIService('information_gathering', CommunityInformation)
+    from .agents import InformationGatheringAgent
+    return InformationGatheringAgent()
 
 
 def create_persona_generation_service():
