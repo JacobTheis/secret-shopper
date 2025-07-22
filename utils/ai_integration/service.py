@@ -39,7 +39,7 @@ class MultiProviderAIService:
         # Initialize primary and fallback agents
         try:
             primary_model = get_model_for_agent(agent_type, prefer_fallback=False)
-            self.primary_agent = Agent(
+            self.primary_agent: Optional[Agent[None, T]] = Agent(
                 model=primary_model,
                 result_type=result_type,
                 system_prompt=self.config['system_prompt']
@@ -51,7 +51,7 @@ class MultiProviderAIService:
         
         try:
             fallback_model = get_model_for_agent(agent_type, prefer_fallback=True)
-            self.fallback_agent = Agent(
+            self.fallback_agent: Optional[Agent[None, T]] = Agent(
                 model=fallback_model,
                 result_type=result_type,
                 system_prompt=self.config['system_prompt']
@@ -154,6 +154,12 @@ def create_information_gathering_service():
     """Create an information gathering service instance."""
     from .agents import InformationGatheringAgent
     return InformationGatheringAgent()
+
+
+def create_master_orchestrator_service():
+    """Create a master orchestrator service instance."""
+    from .agents import MasterOrchestratorAgent
+    return MasterOrchestratorAgent()
 
 
 def create_persona_generation_service():

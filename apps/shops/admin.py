@@ -58,15 +58,14 @@ class ShopAdmin(admin.ModelAdmin):
             # This case means ShopResult exists but CommunityInfo was not created/linked.
             return "Community data not found for results"
 
-# Optional: Register FloorPlan directly if needed for separate management/filtering
-# @admin.register(FloorPlan)
-# class FloorPlanAdmin(admin.ModelAdmin):
-#     list_display = ('name', 'community_info', 'beds', 'baths', 'sqft', 'min_rental_price', 'max_rental_price')
-#     list_filter = ('beds', 'baths', 'type', 'community_info')
-#     search_fields = ('name', 'type', 'community_info__name')
-#     filter_horizontal = ('amenities',)
-#     readonly_fields = ('created_at', 'updated_at')
-#     list_per_page = 50
+@admin.register(FloorPlan)
+class FloorPlanAdmin(admin.ModelAdmin):
+    list_display = ('name', 'community_info', 'beds', 'baths', 'sqft', 'min_rental_price', 'max_rental_price', 'type')
+    list_filter = ('beds', 'baths', 'type', 'community_info')
+    search_fields = ('name', 'type', 'community_info__name')
+    filter_horizontal = ('amenities',)
+    readonly_fields = ('created_at', 'updated_at')
+    list_per_page = 50
 
 
 @admin.register(Amenity)
@@ -203,13 +202,3 @@ class ShopResultAdmin(admin.ModelAdmin):
         except CommunityInfo.DoesNotExist:
             pass
         return "No Community Info"
-
-# Optional: Register FloorPlan directly if needed for separate management/filtering
-# @admin.register(FloorPlan)
-# class FloorPlanAdmin(admin.ModelAdmin):
-#     list_display = ('name', 'community_info', 'beds', 'baths', 'sqft', 'min_rental_price', 'max_rental_price')
-#     list_filter = ('beds', 'baths', 'type', 'community_info')
-#     search_fields = ('name', 'type', 'community_info__name')
-#     filter_horizontal = ('amenities',)
-#     readonly_fields = ('created_at', 'updated_at')
-#     list_per_page = 50

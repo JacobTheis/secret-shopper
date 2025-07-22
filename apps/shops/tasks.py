@@ -1,6 +1,5 @@
 import logging
 import asyncio
-from typing import Dict, Any
 
 from celery import shared_task
 from django.utils import timezone
@@ -8,14 +7,17 @@ from django.db import transaction
 
 from .models import Shop, ShopResult, CommunityInfo, CommunityPage, FloorPlan, Amenity
 from apps.targets.models import Target
-from utils.ai_integration.service import create_information_gathering_service
+from utils.ai_integration.service import create_master_orchestrator_service
 from utils.ai_integration.schemas import CommunityInformation
 from utils.ai_integration.agent_config import RETRY_CONFIG
 
 logger = logging.getLogger(__name__)
 
 
-def _parse_and_save_community_info(shop_result: ShopResult, community_info_data: CommunityInformation) -> None:
+def _parse_and_save_community_info(
+    shop_result: ShopResult, 
+    community_info_data: CommunityInformation
+) -> None:
     """
     Parses the PydanticAI response data and saves it to the CommunityInfo related models.
 
@@ -25,6 +27,10 @@ def _parse_and_save_community_info(shop_result: ShopResult, community_info_data:
     """
     # Create or update CommunityInfo
     # Using update_or_create to handle potential retries or re-runs
+    logger.info(f"Saving community info with fees: Application: ${community_info_data.application_fee}, "
+               f"Administration: ${community_info_data.administration_fee}, "
+               f"Membership: {community_info_data.membership_fee}")
+    
     community_info, created = CommunityInfo.objects.update_or_create(
         shop_result=shop_result,
         defaults={
@@ -32,9 +38,11 @@ def _parse_and_save_community_info(shop_result: ShopResult, community_info_data:
             'overview': community_info_data.overview,
             'url': community_info_data.url,
             'application_fee': community_info_data.application_fee,
-            'application_fee_source': community_info_data.application_fee_source,
+            'application_fee_source': 
+                community_info_data.application_fee_source,
             'administration_fee': community_info_data.administration_fee,
-            'administration_fee_source': community_info_data.administration_fee_source,
+            'administration_fee_source': 
+                community_info_data.administration_fee_source,
             'membership_fee': community_info_data.membership_fee,
             'membership_fee_source': community_info_data.membership_fee_source,
             'pet_policy': community_info_data.pet_policy,
@@ -42,9 +50,12 @@ def _parse_and_save_community_info(shop_result: ShopResult, community_info_data:
             'self_showings': community_info_data.self_showings,
             'self_showings_source': community_info_data.self_showings_source,
             'office_hours': community_info_data.office_hours,
-            'resident_portal_provider': community_info_data.resident_portal_software_provider,
+            'resident_portal_provider': 
+                community_info_data.resident_portal_software_provider,
         }
     )
+    
+    logger.info(f"Saved community info with membership_fee: {community_info.membership_fee}")
     logger.info(f"{'Created' if created else 'Updated'} CommunityInfo {
                 community_info.id} for ShopResult {shop_result.shop_id}")
 
@@ -64,6 +75,11 @@ def _parse_and_save_community_info(shop_result: ShopResult, community_info_data:
 
     # Create FloorPlan objects and their amenities
     for fp_data in community_info_data.floor_plans:
+        logger.info(f"Processing floor plan: {fp_data.name} - "
+                   f"Beds: {fp_data.beds}, Baths: {fp_data.baths}, "
+                   f"Min Price: {fp_data.min_rental_price}, "
+                   f"Max Price: {fp_data.max_rental_price}")
+        
         floor_plan = FloorPlan.objects.create(
             community_info=community_info,
             name=fp_data.name,
@@ -76,6 +92,9 @@ def _parse_and_save_community_info(shop_result: ShopResult, community_info_data:
             max_rental_price=fp_data.max_rental_price,
             security_deposit=fp_data.security_deposit,
         )
+        logger.info(f"Successfully created floor plan: {floor_plan.name} "
+                   f"with ID {floor_plan.id}")
+        
         # Handle floor plan amenities
         for amenity_data in fp_data.floor_plan_amenities:
             if amenity_data.amenity:
@@ -118,27 +137,25 @@ def start_information_gathering_task(self, shop_id: str) -> None:
     shop.save(update_fields=['status', 'start_time', 'updated_at'])
 
     async def run_information_gathering():
-        """Async function to run the information gathering with PydanticAI agents."""
+        """Async function to run the multi-agent information gathering with orchestrator."""
         try:
-            # Create the information gathering agent
-            agent = create_information_gathering_service()
+            # Create the master orchestrator agent
+            orchestrator = create_master_orchestrator_service()
 
-            logger.info(f"Extracting community info for Shop ID: {
+            logger.info(f"Starting multi-agent orchestrated extraction for Shop ID: {
                         shop_id}, Target: {target.name}")
 
-            # Initial extraction using agent method
-            initial_result = await agent.extract_community_info(target.website)
-            logger.info(f"Completed initial extraction for Shop ID: {shop_id}")
+            # Run orchestrated extraction with specialized agents
+            orchestration_result = await orchestrator.orchestrate_extraction(target.website)
+            logger.info(f"Completed orchestrated extraction for Shop ID: {shop_id}")
+            logger.info(f"Orchestration summary: {orchestration_result.extraction_summary}")
+            logger.info(f"Final validation score: {orchestration_result.final_validation_score}%")
+            logger.info(f"Quality assessment: {orchestration_result.quality_assessment}")
 
-            # Follow-up extraction for completeness using agent method
-            final_result = await agent.gather_additional_info(target.website, initial_result)
-            logger.info(
-                f"Completed follow-up extraction for Shop ID: {shop_id}")
-
-            return final_result
+            return orchestration_result.final_community_info
 
         except Exception as e:
-            logger.error(f"Error in async information gathering for Shop ID {
+            logger.error(f"Error in async multi-agent information gathering for Shop ID {
                          shop_id}: {str(e)}")
             raise
 
@@ -163,6 +180,9 @@ def start_information_gathering_task(self, shop_id: str) -> None:
 
             logger.info(f"Parsing and saving community info for ShopResult {
                         shop_result.shop_id}")
+            logger.info(f"Community data contains {len(community_data.floor_plans)} floor plans")
+            for i, fp in enumerate(community_data.floor_plans):
+                logger.info(f"Floor plan {i+1}: {fp.name}")
             _parse_and_save_community_info(shop_result, community_data)
 
         # Update shop status to COMPLETED
