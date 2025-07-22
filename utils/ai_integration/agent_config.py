@@ -195,9 +195,13 @@ AGENT_CONFIGS = {
         'primary_service': 'openai',
         'fallback_service': 'anthropic',
         'openai_model': 'gpt-4.1',
-        'anthropic_model': 'claude-3-5-sonnet-20241022',
-        'temperature': 0.3,
-        'with_search': True,
+        'anthropic_model': 'claude-sonnet-4-20250514',
+        'temperature': 1,
+        'with_search': False,
+        'mcp_timeout': 120,  # seconds
+        'mcp_max_retries': 3,
+        'mcp_base_delay': 1.0,  # seconds
+        'mcp_url': 'https://mcp.firecrawl.dev/fc-f2f7e90a38db44f595408139874ef6bb/sse',
         'system_prompt': """You are a floor plan extraction specialist. Your ONLY job is to find and extract ALL floor plans from rental community websites.
         
         You are extremely thorough and use multiple strategies:

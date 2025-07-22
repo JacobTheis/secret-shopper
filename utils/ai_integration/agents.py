@@ -3,7 +3,7 @@ import logging
 import time
 from typing import Dict, List, Optional
 from pydantic_ai import Agent
-from pydantic_ai.mcp import MCPServerSSE
+from pydantic_ai.mcp import MCPServerHTTP
 
 from .schemas import (
     CommunityInformation,
@@ -399,7 +399,7 @@ class FloorPlanSpecialistAgent:
             'floor_plan_specialist')
 
         # Store MCP URL for later use
-        self.mcp_url = 'https://mcp.firecrawl.dev/fc-f2f7e90a38db44f595408139874ef6bb/sse'
+        self.mcp_url = self.config.get('mcp_url', 'https://mcp.firecrawl.dev/fc-f2f7e90a38db44f595408139874ef6bb/sse')
 
         # Create the PydanticAI agent without toolsets initially
         self.agent = Agent(
@@ -419,63 +419,136 @@ class FloorPlanSpecialistAgent:
             FloorPlanExtractionResult with all discovered floor plans
 
         Raises:
-            Exception: If the extraction fails
+            Exception: If the extraction fails after all retries
         """
         import asyncio
+        import random
+        from anyio import ClosedResourceError
+        import httpx
 
-        try:
-            # Instantiate the tool server and the agent
-            fire_crawl = MCPServerSSE(url=self.mcp_url)
-            agent_with_tools = Agent(
-                model=self.model,
-                result_type=FloorPlanExtractionResult,
-                system_prompt=self.config['system_prompt'],
-                toolsets=[fire_crawl],
-                model_settings=self.model_settings
-            )
+        max_retries = self.config.get('mcp_max_retries', 3)
+        base_delay = self.config.get('mcp_base_delay', 1.0)
+        timeout_seconds = self.config.get('mcp_timeout', 120)
 
-            prompt = self.config['prompts']['extract_floor_plans'].format(
-                website_url=website_url
-            )
-
-            extraction_result = None
-            # Use the agent as the async context manager to handle tool lifecycle
-            async with agent_with_tools:
-                result = await agent_with_tools.run(prompt)
-                extraction_result = result.data
-
-            logger.info(f"FloorPlan specialist completed extraction for {website_url}")
-
-            if extraction_result:
-                logger.info(f"FloorPlan specialist found {len(extraction_result.floor_plans_found)} floor plans for {website_url}")
-                return extraction_result
-            else:
-                # This case might be unlikely if run() always returns or throws
-                logger.warning(f"No extraction result captured for {website_url}")
-                return FloorPlanExtractionResult(
-                    floor_plans_found=[],
-                    extraction_method="no_result_fallback",
-                    pages_searched=[website_url],
-                    search_strategies_used=["initial_page_scan"],
-                    extraction_confidence=0.0,
-                    missing_data_areas=["floor_plans"],
-                    extraction_notes=f"No extraction result captured after agent run for {website_url}"
+        for attempt in range(max_retries + 1):
+            try:
+                logger.info(f"FloorPlan extraction attempt {attempt + 1}/{max_retries + 1} for {website_url}")
+                
+                # Instantiate the tool server and the agent
+                fire_crawl = MCPServerHTTP(url=self.mcp_url)
+                agent_with_tools = Agent(
+                    model=self.model,
+                    result_type=FloorPlanExtractionResult,
+                    system_prompt=self.config['system_prompt'],
+                    toolsets=[fire_crawl],
+                    model_settings=self.model_settings
                 )
 
-        except asyncio.TimeoutError:
-            logger.error(f"Floor plan extraction timed out for {website_url}")
-            return FloorPlanExtractionResult(
-                floor_plans_found=[],
-                extraction_method="timeout_fallback",
-                pages_searched=[website_url],
-                search_strategies_used=["initial_page_scan"],
-                extraction_confidence=0.0,
-                missing_data_areas=["floor_plans"],
-                extraction_notes=f"Floor plan extraction timed out for {website_url}"
-            )
-        except Exception as e:
-            logger.error(f"Floor plan extraction failed for {website_url}: {str(e)}")
-            raise
+                prompt = self.config['prompts']['extract_floor_plans'].format(
+                    website_url=website_url
+                )
+
+                extraction_result = None
+                
+                # Add explicit timeout for the entire operation
+                try:
+                    async with asyncio.timeout(timeout_seconds):
+                        # Use the agent as the async context manager to handle tool lifecycle
+                        async with agent_with_tools:
+                            result = await agent_with_tools.run(prompt)
+                            extraction_result = result.data
+
+                    logger.info(f"FloorPlan specialist completed extraction for {website_url}")
+
+                    if extraction_result:
+                        logger.info(f"FloorPlan specialist found {len(extraction_result.floor_plans_found)} floor plans for {website_url}")
+                        return extraction_result
+                    else:
+                        # This case might be unlikely if run() always returns or throws
+                        logger.warning(f"No extraction result captured for {website_url}")
+                        return FloorPlanExtractionResult(
+                            floor_plans_found=[],
+                            extraction_method="no_result_fallback",
+                            pages_searched=[website_url],
+                            search_strategies_used=["initial_page_scan"],
+                            extraction_confidence=0.0,
+                            missing_data_areas=["floor_plans"],
+                            extraction_notes=f"No extraction result captured after agent run for {website_url}"
+                        )
+
+                except asyncio.TimeoutError:
+                    logger.warning(f"Floor plan extraction timed out for {website_url} (attempt {attempt + 1})")
+                    if attempt == max_retries:
+                        logger.error(f"Floor plan extraction timed out for {website_url} after all retries")
+                        return FloorPlanExtractionResult(
+                            floor_plans_found=[],
+                            extraction_method="timeout_fallback",
+                            pages_searched=[website_url],
+                            search_strategies_used=["initial_page_scan"],
+                            extraction_confidence=0.0,
+                            missing_data_areas=["floor_plans"],
+                            extraction_notes=f"Floor plan extraction timed out for {website_url} after {max_retries + 1} attempts"
+                        )
+                    
+            except (ClosedResourceError, httpx.RemoteProtocolError, ConnectionError) as e:
+                logger.warning(f"MCP connection error for {website_url} (attempt {attempt + 1}): {str(e)}")
+                
+                if attempt == max_retries:
+                    logger.error(f"MCP connection failed for {website_url} after all retries, using fallback")
+                    return await self._fallback_extraction(website_url, f"MCP connection failed after {max_retries + 1} attempts: {str(e)}")
+                
+                # Exponential backoff with jitter
+                delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+                logger.info(f"Retrying floor plan extraction for {website_url} in {delay:.2f} seconds...")
+                await asyncio.sleep(delay)
+                continue
+                
+            except Exception as e:
+                error_msg = str(e).lower()
+                # Check if this is a retryable error
+                if any(keyword in error_msg for keyword in ['timeout', 'connection', 'network', 'server error', 'rate limit']):
+                    logger.warning(f"Retryable error for {website_url} (attempt {attempt + 1}): {str(e)}")
+                    
+                    if attempt == max_retries:
+                        logger.error(f"Floor plan extraction failed for {website_url} after all retries")
+                        return await self._fallback_extraction(website_url, f"Retryable errors exhausted after {max_retries + 1} attempts: {str(e)}")
+                    
+                    # Exponential backoff with jitter  
+                    delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+                    logger.info(f"Retrying floor plan extraction for {website_url} in {delay:.2f} seconds...")
+                    await asyncio.sleep(delay)
+                    continue
+                else:
+                    # Non-retryable error, fail immediately
+                    logger.error(f"Non-retryable error in floor plan extraction for {website_url}: {str(e)}")
+                    raise
+
+        # This should never be reached, but just in case
+        return await self._fallback_extraction(website_url, "Unexpected end of retry loop")
+
+    async def _fallback_extraction(self, website_url: str, error_reason: str) -> FloorPlanExtractionResult:
+        """Fallback extraction method when MCP tools fail completely.
+        
+        Args:
+            website_url: The URL that failed
+            error_reason: Reason for the fallback
+            
+        Returns:
+            FloorPlanExtractionResult with fallback information
+        """
+        logger.info(f"Using fallback extraction for {website_url}: {error_reason}")
+        
+        # TODO: In the future, this could implement a non-MCP based extraction method
+        # For now, return a structured fallback result
+        return FloorPlanExtractionResult(
+            floor_plans_found=[],
+            extraction_method="mcp_failure_fallback",
+            pages_searched=[website_url],
+            search_strategies_used=["attempted_mcp_extraction"],
+            extraction_confidence=0.0,
+            missing_data_areas=["floor_plans"],
+            extraction_notes=f"MCP tools failed for {website_url}. Reason: {error_reason}. Manual extraction may be needed."
+        )
 
 
 class CommunityOverviewAgent:
