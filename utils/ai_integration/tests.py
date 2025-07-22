@@ -1,5 +1,5 @@
 """Tests for PydanticAI agents and services."""
-import pytest
+import unittest
 from unittest.mock import Mock, patch, AsyncMock
 from pydantic_ai.models import Model
 from pydantic_ai import Agent

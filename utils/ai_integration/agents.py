@@ -3,7 +3,7 @@ import logging
 import time
 from typing import Dict, List, Optional
 from pydantic_ai import Agent
-from pydantic_ai.mcp import MCPServerHTTP
+from pydantic_ai.mcp import MCPServerStdio
 
 from .schemas import (
     CommunityInformation,
@@ -173,9 +173,12 @@ class PersonaGenerationAgent:
         """
         try:
             # Build conditional text for the prompt
-            target_demographics_text = f"Target demographics: {target_demographics}" if target_demographics else ""
-            budget_range_text = f"Budget range: {budget_range}" if budget_range else ""
-            special_requirements_text = f"Special requirements: {', '.join(special_requirements)}" if special_requirements else ""
+            target_demographics_text = f"Target demographics: {
+                target_demographics}" if target_demographics else ""
+            budget_range_text = f"Budget range: {
+                budget_range}" if budget_range else ""
+            special_requirements_text = f"Special requirements: {
+                ', '.join(special_requirements)}" if special_requirements else ""
 
             prompt = self.config['prompts']['generate_persona'].format(
                 target_demographics_text=target_demographics_text,
@@ -250,7 +253,8 @@ class ConversationAgent:
             )
 
             result = await self.agent.run(prompt)
-            logger.info(f"Generated initial inquiry for persona {persona.name}")
+            logger.info(f"Generated initial inquiry for persona {
+                        persona.name}")
             # Type assertion for mypy - PydanticAI result.data should match result_type
             return result.data  # type: ignore
 
@@ -282,7 +286,8 @@ class ConversationAgent:
                 content = message.get("content", "")
                 conversation_str += f"{sender}: {content}\n\n"
 
-            missing_info_str = "\n".join([f"- {info}" for info in missing_info])
+            missing_info_str = "\n".join(
+                [f"- {info}" for info in missing_info])
 
             prompt = self.config['prompts']['generate_followup'].format(
                 persona_name=persona.name,
@@ -317,7 +322,8 @@ class ConversationAgent:
             raise ValueError("This agent is not configured for analysis")
 
         try:
-            data_points_str = "\n".join([f"- {point}" for point in data_points])
+            data_points_str = "\n".join(
+                [f"- {point}" for point in data_points])
 
             prompt = self.config['prompts']['analyze_response'].format(
                 community_name=community_info.name,
@@ -338,25 +344,45 @@ class ConversationAgent:
 class FloorPlanSpecialistAgent:
     """Agent specialized in finding and extracting floor plan information."""
 
-    def __init__(self):
-        """Initialize the floor plan specialist agent."""
+    def __init__(self, use_mcp_service: bool = True):
+        """Initialize the floor plan specialist agent.
+        
+        Args:
+            use_mcp_service: If True, use external MCP service. If False, use direct MCP (for mcp_service.py itself)
+        """
         self.config = get_agent_config('floor_plan_specialist')
         self.model = get_model_for_agent('floor_plan_specialist')
         self.model_settings = get_model_settings_for_agent(
             'floor_plan_specialist')
+        self.use_mcp_service = use_mcp_service
 
-        # Store MCP URL for later use
-        self.mcp_url = self.config.get('mcp_url', 'https://mcp.firecrawl.dev/fc-f2f7e90a38db44f595408139874ef6bb/sse')
-
-        # Create the PydanticAI agent with MCP toolset
-        fire_crawl = MCPServerHTTP(url=self.mcp_url)
-        self.agent = Agent(
-            model=self.model,
-            result_type=FloorPlanExtractionResult,
-            system_prompt=self.config['system_prompt'],
-            toolsets=[fire_crawl],
-            model_settings=self.model_settings
-        )
+        if not use_mcp_service:
+            # Direct MCP usage (only for mcp_service.py)
+            from pydantic_ai.mcp import MCPServerStdio
+            fire_crawl = MCPServerStdio(
+                command="npx",
+                args=["-y", "firecrawl-mcp"],
+                env={
+                    "FIRECRAWL_API_KEY": "fc-f2f7e90a38db44f595408139874ef6bb",
+                    "FIRECRAWL_RETRY_MAX_ATTEMPTS": "5",
+                    "FIRECRAWL_RETRY_INITIAL_DELAY": "2000",
+                    "FIRECRAWL_RETRY_MAX_DELAY": "30000",
+                    "FIRECRAWL_RETRY_BACKOFF_FACTOR": "3",
+                    "FIRECRAWL_CREDIT_WARNING_THRESHOLD": "2000",
+                    "FIRECRAWL_CREDIT_CRITICAL_THRESHOLD": "500"
+                }
+            )
+            self.agent = Agent(
+                model=self.model,
+                result_type=FloorPlanExtractionResult,
+                system_prompt=self.config['system_prompt'],
+                toolsets=[fire_crawl],
+                model_settings=self.model_settings
+            )
+        else:
+            # Use MCP service client
+            from .mcp_client import MCPServiceClient
+            self.mcp_client = MCPServiceClient()
 
     async def extract_floor_plans(self, website_url: str) -> FloorPlanExtractionResult:
         """Extract all floor plans from a rental community website.
@@ -370,19 +396,30 @@ class FloorPlanSpecialistAgent:
         Raises:
             Exception: If the extraction fails
         """
-        try:
-            prompt = self.config['prompts']['extract_floor_plans'].format(
-                website_url=website_url
-            )
+        if self.use_mcp_service:
+            # Use MCP service
+            try:
+                logger.info(f"Using MCP service for floor plan extraction: {website_url}")
+                result = await self.mcp_client.extract_floor_plans(website_url)
+                logger.info(f"MCP service found {len(result.floor_plans_found)} floor plans for {website_url}")
+                return result
+            except Exception as e:
+                logger.error(f"MCP service floor plan extraction failed for {website_url}: {str(e)}")
+                raise
+        else:
+            # Direct MCP usage (for mcp_service.py)
+            try:
+                prompt = self.config['prompts']['extract_floor_plans'].format(
+                    website_url=website_url
+                )
 
-            result = await self.agent.run(prompt)
-            logger.info(f"FloorPlan specialist found {
-                        len(result.data.floor_plans_found)} floor plans for {website_url}")
-            return result.data
+                result = await self.agent.run(prompt)
+                logger.info(f"FloorPlan specialist found {len(result.data.floor_plans_found)} floor plans for {website_url}")
+                return result.data
 
-        except Exception as e:
-            logger.error(f"Floor plan extraction failed for {website_url}: {str(e)}")
-            raise
+            except Exception as e:
+                logger.error(f"Floor plan extraction failed for {website_url}: {str(e)}")
+                raise
 
 
 class CommunityOverviewAgent:
