@@ -344,45 +344,72 @@ class ConversationAgent:
 class FloorPlanSpecialistAgent:
     """Agent specialized in finding and extracting floor plan information."""
 
-    def __init__(self, use_mcp_service: bool = True):
-        """Initialize the floor plan specialist agent.
-        
-        Args:
-            use_mcp_service: If True, use external MCP service. If False, use direct MCP (for mcp_service.py itself)
-        """
+    def __init__(self):
+        """Initialize the floor plan specialist agent."""
         self.config = get_agent_config('floor_plan_specialist')
         self.model = get_model_for_agent('floor_plan_specialist')
         self.model_settings = get_model_settings_for_agent(
             'floor_plan_specialist')
-        self.use_mcp_service = use_mcp_service
 
-        if not use_mcp_service:
-            # Direct MCP usage (only for mcp_service.py)
-            from pydantic_ai.mcp import MCPServerStdio
-            fire_crawl = MCPServerStdio(
-                command="npx",
-                args=["-y", "firecrawl-mcp"],
-                env={
-                    "FIRECRAWL_API_KEY": "fc-f2f7e90a38db44f595408139874ef6bb",
-                    "FIRECRAWL_RETRY_MAX_ATTEMPTS": "5",
-                    "FIRECRAWL_RETRY_INITIAL_DELAY": "2000",
-                    "FIRECRAWL_RETRY_MAX_DELAY": "30000",
-                    "FIRECRAWL_RETRY_BACKOFF_FACTOR": "3",
-                    "FIRECRAWL_CREDIT_WARNING_THRESHOLD": "2000",
-                    "FIRECRAWL_CREDIT_CRITICAL_THRESHOLD": "500"
-                }
-            )
-            self.agent = Agent(
-                model=self.model,
-                result_type=FloorPlanExtractionResult,
-                system_prompt=self.config['system_prompt'],
-                toolsets=[fire_crawl],
-                model_settings=self.model_settings
-            )
-        else:
-            # Use MCP service client
-            from .mcp_client import MCPServiceClient
-            self.mcp_client = MCPServiceClient()
+        # Initialize Firecrawl API key
+        self.firecrawl_api_key = "fc-f2f7e90a38db44f595408139874ef6bb"
+
+        # Create the PydanticAI agent without MCP toolset
+        self.agent = Agent(
+            model=self.model,
+            result_type=FloorPlanExtractionResult,
+            system_prompt=self.config['system_prompt'],
+            model_settings=self.model_settings
+        )
+
+    async def _scrape_website(self, url: str) -> str:
+        """Scrape website content using Firecrawl API directly.
+        
+        Args:
+            url: The URL to scrape
+            
+        Returns:
+            Scraped content as text
+        """
+        import httpx
+        import asyncio
+
+        headers = {
+            'Authorization': f'Bearer {self.firecrawl_api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        payload = {
+            'url': url,
+            'formats': ['markdown', 'html'],
+            'includeTags': ['a', 'div', 'section', 'h1', 'h2', 'h3', 'p', 'span', 'table'],
+            'onlyMainContent': True,
+            'waitFor': 5000  # Wait 5 seconds for page to load
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=60) as client:
+                response = await client.post(
+                    'https://api.firecrawl.dev/v1/scrape',
+                    headers=headers,
+                    json=payload
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get('success'):
+                        content = data.get('data', {})
+                        return content.get('markdown', content.get('html', ''))
+                    else:
+                        logger.error(f"Firecrawl API error: {data.get('error')}")
+                        return ""
+                else:
+                    logger.error(f"Firecrawl API returned {response.status_code}: {response.text}")
+                    return ""
+                    
+        except Exception as e:
+            logger.error(f"Error scraping {url} with Firecrawl: {str(e)}")
+            return ""
 
     async def extract_floor_plans(self, website_url: str) -> FloorPlanExtractionResult:
         """Extract all floor plans from a rental community website.
@@ -396,30 +423,50 @@ class FloorPlanSpecialistAgent:
         Raises:
             Exception: If the extraction fails
         """
-        if self.use_mcp_service:
-            # Use MCP service
-            try:
-                logger.info(f"Using MCP service for floor plan extraction: {website_url}")
-                result = await self.mcp_client.extract_floor_plans(website_url)
-                logger.info(f"MCP service found {len(result.floor_plans_found)} floor plans for {website_url}")
-                return result
-            except Exception as e:
-                logger.error(f"MCP service floor plan extraction failed for {website_url}: {str(e)}")
-                raise
-        else:
-            # Direct MCP usage (for mcp_service.py)
-            try:
-                prompt = self.config['prompts']['extract_floor_plans'].format(
-                    website_url=website_url
+        try:
+            # First scrape the website content
+            logger.info(f"Scraping website content for {website_url}")
+            website_content = await self._scrape_website(website_url)
+            
+            if not website_content:
+                logger.warning(f"No content scraped from {website_url}, using fallback")
+                return FloorPlanExtractionResult(
+                    floor_plans_found=[],
+                    extraction_method="scraping_failed",
+                    pages_searched=[website_url],
+                    search_strategies_used=["direct_api_scrape"],
+                    extraction_confidence=0.0,
+                    missing_data_areas=["floor_plans"],
+                    extraction_notes=f"Failed to scrape content from {website_url}"
                 )
 
-                result = await self.agent.run(prompt)
-                logger.info(f"FloorPlan specialist found {len(result.data.floor_plans_found)} floor plans for {website_url}")
-                return result.data
+            # Create enhanced prompt with scraped content
+            prompt = f"""
+            Website URL: {website_url}
+            
+            Website Content:
+            {website_content[:15000]}  # Limit content to prevent token overflow
+            
+            Based on the above website content, extract all floor plan information following the requirements in your system prompt.
+            Look for floor plan names, bedroom/bathroom counts, square footage, pricing, and amenities.
+            """
 
-            except Exception as e:
-                logger.error(f"Floor plan extraction failed for {website_url}: {str(e)}")
-                raise
+            result = await self.agent.run(prompt)
+            logger.info(f"FloorPlan specialist found {len(result.data.floor_plans_found)} floor plans for {website_url}")
+            return result.data
+
+        except Exception as e:
+            logger.error(f"Floor plan extraction failed for {website_url}: {str(e)}")
+            # Return fallback result instead of raising
+            return FloorPlanExtractionResult(
+                floor_plans_found=[],
+                extraction_method="extraction_error",
+                pages_searched=[website_url],
+                search_strategies_used=["direct_api_scrape"],
+                extraction_confidence=0.0,
+                missing_data_areas=["floor_plans"],
+                extraction_notes=f"Extraction failed: {str(e)}"
+            )
 
 
 class CommunityOverviewAgent:
