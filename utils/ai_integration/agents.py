@@ -3,6 +3,7 @@ import logging
 import time
 from typing import Dict, List, Optional
 from pydantic_ai import Agent
+from pydantic_ai.mcp import MCPServerSSE
 
 from .schemas import (
     CommunityInformation,
@@ -397,7 +398,10 @@ class FloorPlanSpecialistAgent:
         self.model_settings = get_model_settings_for_agent(
             'floor_plan_specialist')
 
-        # Create the PydanticAI agent
+        # Store MCP URL for later use
+        self.mcp_url = 'https://mcp.firecrawl.dev/fc-f2f7e90a38db44f595408139874ef6bb/sse'
+
+        # Create the PydanticAI agent without toolsets initially
         self.agent = Agent(
             model=self.model,
             result_type=FloorPlanExtractionResult,
@@ -417,16 +421,71 @@ class FloorPlanSpecialistAgent:
         Raises:
             Exception: If the extraction fails
         """
+        import asyncio
+
         try:
-            prompt = self.config['prompts']['extract_floor_plans'].format(
-                website_url=website_url
+            # Store the result outside the context manager to avoid cleanup issues
+            extraction_result = None
+            
+            try:
+                # Use MCP server within proper async context
+                async with MCPServerSSE(url=self.mcp_url) as fire_crawl:
+                    # Create agent instance with the MCP toolset for this call
+                    agent_with_tools = Agent(
+                        model=self.model,
+                        result_type=FloorPlanExtractionResult,
+                        system_prompt=self.config['system_prompt'],
+                        toolsets=[fire_crawl],
+                        model_settings=self.model_settings
+                    )
+
+                    prompt = self.config['prompts']['extract_floor_plans'].format(
+                        website_url=website_url
+                    )
+
+                    result = await agent_with_tools.run(prompt)
+                    extraction_result = result.data
+                    logger.info(f"FloorPlan specialist completed extraction for {website_url}")
+                
+                # Return result after context cleanup
+                if extraction_result:
+                    logger.info(f"FloorPlan specialist found {
+                                len(extraction_result.floor_plans_found)} floor plans for {website_url}")
+                    return extraction_result
+                else:
+                    # Fallback if no result was captured
+                    logger.warning(f"No extraction result captured for {website_url}")
+                    return FloorPlanExtractionResult(
+                        floor_plans_found=[],
+                        extraction_method="no_result_fallback",
+                        pages_searched=[website_url],
+                        search_strategies_used=["initial_page_scan"],
+                        extraction_confidence=0.0,
+                        missing_data_areas=["floor_plans"],
+                        extraction_notes=f"No extraction result captured for {website_url}"
+                    )
+                    
+            except RuntimeError as e:
+                # Handle the specific cancel scope error - still return result if we got one
+                if "cancel scope" in str(e) and extraction_result:
+                    logger.warning(f"Context cleanup error but extraction succeeded for {website_url}: {str(e)}")
+                    return extraction_result
+                else:
+                    logger.error(f"Runtime error in floor plan extraction for {website_url}: {str(e)}")
+                    raise
+
+        except asyncio.TimeoutError:
+            logger.error(f"Floor plan extraction timed out for {website_url}")
+            # Return empty result instead of failing completely
+            return FloorPlanExtractionResult(
+                floor_plans_found=[],
+                extraction_method="timeout_fallback",
+                pages_searched=[website_url],
+                search_strategies_used=["initial_page_scan"],
+                extraction_confidence=0.0,
+                missing_data_areas=["floor_plans"],
+                extraction_notes=f"Floor plan extraction timed out for {website_url}"
             )
-
-            result = await self.agent.run(prompt)
-            logger.info(f"FloorPlan specialist found {
-                        len(result.data.floor_plans_found)} floor plans for {website_url}")
-            return result.data
-
         except Exception as e:
             logger.error(f"Floor plan extraction failed for {
                          website_url}: {str(e)}")
