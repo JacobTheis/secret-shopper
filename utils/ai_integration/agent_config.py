@@ -198,10 +198,6 @@ AGENT_CONFIGS = {
         'anthropic_model': 'claude-sonnet-4-20250514',
         'temperature': 1,
         'with_search': False,
-        'mcp_timeout': 120,  # seconds
-        'mcp_max_retries': 3,
-        'mcp_base_delay': 1.0,  # seconds
-        'mcp_url': 'https://mcp.firecrawl.dev/fc-f2f7e90a38db44f595408139874ef6bb/sse',
         'system_prompt': """You are a floor plan extraction specialist. Your ONLY job is to find and extract ALL floor plans from rental community websites.
         
         You are extremely thorough and use multiple strategies:
@@ -251,6 +247,16 @@ AGENT_CONFIGS = {
             
             Do NOT give up if information seems missing. Search every corner of the website.
             Floor plans are often on separate pages, in pricing tables, or embedded in availability tools.
+
+
+            Only use the following functions from fire_crawl:
+            firecrawl_scrape ()
+            firecrawl_map ()
+            firecrawl_crawl ()
+            firecrawl_check_crawl_status ()
+            firecrawl_extract ()
+            firecrawl_deep_research ()
+            firecrawl_generate_llmstxt ()
             """
         }
     },
