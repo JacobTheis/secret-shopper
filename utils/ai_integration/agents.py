@@ -172,23 +172,16 @@ class PersonaGenerationAgent:
             PersonaDetails object with generated persona
         """
         try:
-            prompt = f"""
-            Generate a realistic persona for apartment hunting secret shopping.
+            # Build conditional text for the prompt
+            target_demographics_text = f"Target demographics: {target_demographics}" if target_demographics else ""
+            budget_range_text = f"Budget range: {budget_range}" if budget_range else ""
+            special_requirements_text = f"Special requirements: {', '.join(special_requirements)}" if special_requirements else ""
 
-            The persona should be believable and detailed, including:
-            - Personal background and occupation
-            - Communication style and preferences
-            - Housing priorities and requirements
-            - Timeline and budget considerations
-            - Specific questions they would ask
-
-            {"Target demographics: " + target_demographics if target_demographics else ""}
-            {"Budget range: " + budget_range if budget_range else ""}
-            {"Special requirements: " +
-                ", ".join(special_requirements) if special_requirements else ""}
-
-            Make the persona authentic and varied to avoid detection as a secret shopper.
-            """
+            prompt = self.config['prompts']['generate_persona'].format(
+                target_demographics_text=target_demographics_text,
+                budget_range_text=budget_range_text,
+                special_requirements_text=special_requirements_text
+            )
 
             result = await self.agent.run(prompt)
             logger.info("Successfully generated persona")
@@ -239,38 +232,25 @@ class ConversationAgent:
                 "This agent is not configured for initial inquiries")
 
         try:
-            prompt = f"""
-            You are {persona.name}, a {persona.age} year old {persona.occupation} looking for a new place to live.
-
-            Write an initial inquiry email about this community:
-            Community: {community_info.name}
-            Website: {community_info.url}
-
-            Your persona details:
-            - Age: {persona.age}
-            - Occupation: {persona.occupation}
-            - Timeline: {persona.timeline}
-            - Key question: {persona.key_question}
-            - Interest point: {persona.interest_point}
-            - Communication style: {persona.communication_style}
-            - Budget range: {persona.budget_range}
-            - Background: {persona.background_story}
-
-            Your priorities: {', '.join(persona.priorities)}
-
-            Your email should:
-            1. Express interest in the property
-            2. Ask about availability for viewing
-            3. Inquire about your key question: {persona.key_question}
-            4. Mention your timeline: {persona.timeline}
-            5. Request more information about {persona.interest_point}
-
-            Sign as {persona.name} and include contact: {persona.email} and {persona.phone}
-            """
+            prompt = self.config['prompts']['generate_initial_inquiry'].format(
+                persona_name=persona.name,
+                persona_age=persona.age,
+                persona_occupation=persona.occupation,
+                community_name=community_info.name,
+                community_url=community_info.url,
+                persona_timeline=persona.timeline,
+                persona_key_question=persona.key_question,
+                persona_interest_point=persona.interest_point,
+                persona_communication_style=persona.communication_style,
+                persona_budget_range=persona.budget_range,
+                persona_background_story=persona.background_story,
+                persona_priorities=', '.join(persona.priorities),
+                persona_email=persona.email,
+                persona_phone=persona.phone
+            )
 
             result = await self.agent.run(prompt)
-            logger.info(f"Generated initial inquiry for persona {
-                        persona.name}")
+            logger.info(f"Generated initial inquiry for persona {persona.name}")
             # Type assertion for mypy - PydanticAI result.data should match result_type
             return result.data  # type: ignore
 
@@ -302,26 +282,14 @@ class ConversationAgent:
                 content = message.get("content", "")
                 conversation_str += f"{sender}: {content}\n\n"
 
-            missing_info_str = "\n".join(
-                [f"- {info}" for info in missing_info])
+            missing_info_str = "\n".join([f"- {info}" for info in missing_info])
 
-            prompt = f"""
-            You are {persona.name} following up on a property inquiry.
-
-            Previous conversation:
-            {conversation_str}
-
-            You still need to find out about:
-            {missing_info_str}
-
-            Write a polite follow-up email that:
-            1. Thanks the agent for their previous response
-            2. Asks specifically about the missing information
-            3. Reiterates your interest in the property
-            4. Maintains your communication style: {persona.communication_style}
-
-            Sign as {persona.name}.
-            """
+            prompt = self.config['prompts']['generate_followup'].format(
+                persona_name=persona.name,
+                conversation_history=conversation_str,
+                missing_info=missing_info_str,
+                persona_communication_style=persona.communication_style
+            )
 
             result = await self.agent.run(prompt)
             logger.info(f"Generated follow-up for persona {persona.name}")
@@ -349,35 +317,14 @@ class ConversationAgent:
             raise ValueError("This agent is not configured for analysis")
 
         try:
-            data_points_str = "\n".join(
-                [f"- {point}" for point in data_points])
+            data_points_str = "\n".join([f"- {point}" for point in data_points])
 
-            prompt = f"""
-            Analyze this property agent's response to extract key information.
-
-            Property details:
-            Name: {community_info.name}
-            URL: {community_info.url}
-
-            Agent's message:
-            {agent_message}
-
-            Extract these data points:
-            {data_points_str}
-
-            For each data point:
-            1. Provide exact information if found
-            2. Mark as "Not provided" if not found
-            3. Note any vague or misleading statements
-
-            Evaluate:
-            - Agent responsiveness (1-5 scale)
-            - Question coverage (1-5 scale)
-            - Professionalism (1-5 scale)
-            - Overall helpfulness (1-5 scale)
-
-            Identify missing information and whether follow-up is needed.
-            """
+            prompt = self.config['prompts']['analyze_response'].format(
+                community_name=community_info.name,
+                community_url=community_info.url,
+                agent_message=agent_message,
+                data_points=data_points_str
+            )
 
             result = await self.agent.run(prompt)
             logger.info("Successfully analyzed agent response")

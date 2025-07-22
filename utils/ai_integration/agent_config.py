@@ -154,7 +154,25 @@ AGENT_CONFIGS = {
         'temperature': 0.8,
         'system_prompt': """You are an expert at creating realistic personas for secret shopping scenarios.
         Generate detailed, believable personas with specific backgrounds, preferences, and communication styles
-        that would be appropriate for apartment hunting scenarios."""
+        that would be appropriate for apartment hunting scenarios.""",
+        'prompts': {
+            'generate_persona': """
+            Generate a realistic persona for apartment hunting secret shopping.
+
+            The persona should be believable and detailed, including:
+            - Personal background and occupation
+            - Communication style and preferences
+            - Housing priorities and requirements
+            - Timeline and budget considerations
+            - Specific questions they would ask
+
+            {target_demographics_text}
+            {budget_range_text}
+            {special_requirements_text}
+
+            Make the persona authentic and varied to avoid detection as a secret shopper.
+            """
+        }
     },
 
     'conversation_initial': {
@@ -165,7 +183,37 @@ AGENT_CONFIGS = {
         'temperature': 0.7,
         'system_prompt': """You are roleplaying as a potential tenant looking for an apartment.
         Write natural, engaging initial inquiry emails that reflect your persona's communication style,
-        interests, and housing needs. Be authentic and specific in your questions."""
+        interests, and housing needs. Be authentic and specific in your questions.""",
+        'prompts': {
+            'generate_initial_inquiry': """
+            You are {persona_name}, a {persona_age} year old {persona_occupation} looking for a new place to live.
+
+            Write an initial inquiry email about this community:
+            Community: {community_name}
+            Website: {community_url}
+
+            Your persona details:
+            - Age: {persona_age}
+            - Occupation: {persona_occupation}
+            - Timeline: {persona_timeline}
+            - Key question: {persona_key_question}
+            - Interest point: {persona_interest_point}
+            - Communication style: {persona_communication_style}
+            - Budget range: {persona_budget_range}
+            - Background: {persona_background_story}
+
+            Your priorities: {persona_priorities}
+
+            Your email should:
+            1. Express interest in the property
+            2. Ask about availability for viewing
+            3. Inquire about your key question: {persona_key_question}
+            4. Mention your timeline: {persona_timeline}
+            5. Request more information about {persona_interest_point}
+
+            Sign as {persona_name} and include contact: {persona_email} and {persona_phone}
+            """
+        }
     },
 
     'conversation_followup': {
@@ -176,7 +224,26 @@ AGENT_CONFIGS = {
         'temperature': 0.7,
         'system_prompt': """You are following up on a previous apartment inquiry as your persona.
         Write polite, natural follow-up emails that address any missing information while maintaining
-        your character's voice and style. Show continued interest while being specific about your needs."""
+        your character's voice and style. Show continued interest while being specific about your needs.""",
+        'prompts': {
+            'generate_followup': """
+            You are {persona_name} following up on a property inquiry.
+
+            Previous conversation:
+            {conversation_history}
+
+            You still need to find out about:
+            {missing_info}
+
+            Write a polite follow-up email that:
+            1. Thanks the agent for their previous response
+            2. Asks specifically about the missing information
+            3. Reiterates your interest in the property
+            4. Maintains your communication style: {persona_communication_style}
+
+            Sign as {persona_name}.
+            """
+        }
     },
 
     'conversation_analysis': {
@@ -187,7 +254,35 @@ AGENT_CONFIGS = {
         'temperature': 0.1,
         'system_prompt': """You are analyzing property agent responses for secret shopping purposes.
         Extract key information, evaluate responsiveness and professionalism, and identify what
-        information is still missing. Be objective and thorough in your analysis."""
+        information is still missing. Be objective and thorough in your analysis.""",
+        'prompts': {
+            'analyze_response': """
+            Analyze this property agent's response to extract key information.
+
+            Property details:
+            Name: {community_name}
+            URL: {community_url}
+
+            Agent's message:
+            {agent_message}
+
+            Extract these data points:
+            {data_points}
+
+            For each data point:
+            1. Provide exact information if found
+            2. Mark as "Not provided" if not found
+            3. Note any vague or misleading statements
+
+            Evaluate:
+            - Agent responsiveness (1-5 scale)
+            - Question coverage (1-5 scale)
+            - Professionalism (1-5 scale)
+            - Overall helpfulness (1-5 scale)
+
+            Identify missing information and whether follow-up is needed.
+            """
+        }
     },
 
     # Multi-Agent Information Gathering Agents
