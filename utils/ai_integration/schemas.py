@@ -21,6 +21,18 @@ class CommunityPage(BaseModel):
     url: str = Field(description="The URL for the page")
 
 
+class FeeDetails(BaseModel):
+    """Schema for detailed fee information."""
+    fee_name: str = Field(description="Name or title of the fee")
+    amount: Optional[float] = Field(None, description="Dollar amount of the fee")
+    description: str = Field(description="Description of what the fee covers")
+    refundable: bool = Field(default=False, description="Whether this fee is refundable")
+    frequency: str = Field(description="Frequency (one-time, monthly, annual, conditional)")
+    source_url: str = Field(description="URL where this fee information was found")
+    conditions: Optional[str] = Field(None, description="Any conditions that apply to this fee")
+    fee_category: str = Field(description="Category (application, pet, amenity, etc.)")
+
+
 class FloorPlan(BaseModel):
     """Represents a floor plan in the community."""
     name: str = Field(description="The name of the floor plan")
@@ -38,7 +50,9 @@ class FloorPlan(BaseModel):
         None, description="The maximum rental price of the floor plan")
     security_deposit: Optional[float] = Field(
         None, description="The security deposit required for the floor plan")
-    num_available_units: Optional[int] = Field(
+    image: Optional[str] = Field(
+        None, description="URL to the floor plan image if available")
+    num_available: Optional[int] = Field(
         None, description="The number of available units for the floor plan")
     floor_plan_amenities: List[FloorPlanAmenity] = Field(
         default_factory=list,
@@ -53,18 +67,9 @@ class CommunityInformation(BaseModel):
         description="A brief summary or description of the community")
     url: str = Field(
         description="The link to the community's homepage or relevant page")
-    application_fee: Optional[float] = Field(
-        None, description="The fee charged to prospects for applying to live in the community")
-    application_fee_source: Optional[str] = Field(
-        None, description="The source url of the application fee. This is usually a link to the payment processor")
-    administration_fee: Optional[float] = Field(
-        None, description="The one time fee charged to prospects for administrative purposes")
-    administration_fee_source: Optional[str] = Field(
-        None, description="The source url of the administration fee. This is usually a link to the payment processor")
-    membership_fee: Optional[str] = Field(
-        None, description="The recurring fee charged to residents for membership in the community or renting a property in the community. Sometimes called a resident benefits package or amenity package")
-    membership_fee_source: Optional[str] = Field(
-        None, description="The source url of the membership fee. This is usually a link to the payment processor")
+    fees: List[FeeDetails] = Field(
+        default_factory=list,
+        description="List of all fees associated with the community")
     pet_policy: Optional[str] = Field(
         None, description="The community's policy and fees on pets")
     pet_policy_source: Optional[str] = Field(
@@ -206,17 +211,6 @@ class CommunityOverviewExtractionResult(BaseModel):
     policy_sources_found: List[str] = Field(
         default_factory=list, description="Sources where policy information was located")
     extraction_notes: str = Field(description="Additional notes about the extraction process")
-
-
-class FeeDetails(BaseModel):
-    """Schema for detailed fee information."""
-    fee_name: str = Field(description="Name or title of the fee")
-    amount: Optional[float] = Field(None, description="Dollar amount of the fee")
-    description: str = Field(description="Description of what the fee covers")
-    frequency: str = Field(description="Frequency (one-time, monthly, annual, conditional)")
-    source_url: str = Field(description="URL where this fee information was found")
-    conditions: Optional[str] = Field(None, description="Any conditions that apply to this fee")
-    fee_category: str = Field(description="Category (application, pet, amenity, etc.)")
 
 
 class FeeExtractionResult(BaseModel):

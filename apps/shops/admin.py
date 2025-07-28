@@ -3,7 +3,7 @@ from django.urls import reverse # Import reverse
 from django.utils.html import format_html
 
 from .models import (Amenity, CommunityInfo, CommunityPage, FloorPlan, Shop,
-                     ShopResult)
+                     ShopResult, Fee)
 
 
 @admin.register(Shop)
@@ -107,6 +107,24 @@ class FloorPlanInline(admin.TabularInline):
     filter_horizontal = ("amenities",) # Use filter_horizontal for ManyToMany
 
 
+class FeeInline(admin.TabularInline):
+    """Inline admin for Fees within CommunityInfo."""
+
+    model = Fee
+    extra = 0
+    fields = (
+        "name",
+        "amount",
+        "description",
+        "refundable",
+        "frequency",
+        "fee_category",
+        "source_url",
+        "conditions",
+    )
+    readonly_fields = ("created_at", "updated_at")
+
+
 @admin.register(CommunityInfo)
 class CommunityInfoAdmin(admin.ModelAdmin):
     """Admin configuration for the CommunityInfo model."""
@@ -115,9 +133,7 @@ class CommunityInfoAdmin(admin.ModelAdmin):
         "name",
         "get_shop_target",
         "url",
-        "application_fee",
-        "administration_fee",
-        "membership_fee",
+        "get_fees_count",
         "created_at",
     )
     list_filter = ("created_at", "self_showings")
@@ -130,7 +146,7 @@ class CommunityInfoAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("created_at", "updated_at", "shop_result") # shop_result is set programmatically
     filter_horizontal = ("community_amenities",)
-    inlines = [CommunityPageInline, FloorPlanInline]
+    inlines = [CommunityPageInline, FeeInline, FloorPlanInline]
     list_per_page = 25
 
     fieldsets = (
@@ -148,15 +164,9 @@ class CommunityInfoAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "Fees & Policies",
+            "Policies",
             {
                 "fields": (
-                    "application_fee",
-                    "application_fee_source",
-                    "administration_fee",
-                    "administration_fee_source",
-                    "membership_fee",
-                    "membership_fee_source",
                     "pet_policy",
                     "pet_policy_source",
                 )
@@ -175,6 +185,11 @@ class CommunityInfoAdmin(admin.ModelAdmin):
         if obj.shop_result and obj.shop_result.shop:
             return obj.shop_result.shop.target
         return "N/A"
+
+    @admin.display(description="Fees Count")
+    def get_fees_count(self, obj):
+        """Display the number of fees for this community."""
+        return obj.fees.count()
 
 
 @admin.register(ShopResult)
@@ -202,3 +217,59 @@ class ShopResultAdmin(admin.ModelAdmin):
         except CommunityInfo.DoesNotExist:
             pass
         return "No Community Info"
+
+
+@admin.register(Fee)
+class FeeAdmin(admin.ModelAdmin):
+    """Admin configuration for the Fee model."""
+
+    list_display = (
+        "name",
+        "amount",
+        "get_community_name",
+        "frequency",
+        "fee_category",
+        "refundable",
+        "created_at",
+    )
+    list_filter = ("frequency", "fee_category", "refundable", "created_at")
+    search_fields = (
+        "name",
+        "description",
+        "fee_category",
+        "community_info__name",
+    )
+    readonly_fields = ("created_at", "updated_at")
+    list_per_page = 50
+
+    fieldsets = (
+        (
+            "Basic Information",
+            {
+                "fields": (
+                    "community_info",
+                    "name",
+                    "amount",
+                    "description",
+                    "refundable",
+                )
+            },
+        ),
+        (
+            "Details",
+            {
+                "fields": (
+                    "frequency",
+                    "fee_category",
+                    "source_url",
+                    "conditions",
+                )
+            },
+        ),
+        ("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
+
+    @admin.display(description="Community", ordering="community_info__name")
+    def get_community_name(self, obj):
+        """Display the community name from the related CommunityInfo."""
+        return obj.community_info.name if obj.community_info.name else "N/A"

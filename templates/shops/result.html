@@ -44,57 +44,69 @@
                 </div>
             </div>
             
+            {% if shop.result.community_info.fees.all %}
             <div class="row mb-3">
                 <div class="col-md-12">
                     <h4 class="h6">Fees</h4>
                     <table class="table table-sm table-bordered">
                         <thead class="table-light">
                             <tr>
-                                <th>Fee Type</th>
+                                <th>Fee Name</th>
                                 <th>Amount</th>
+                                <th>Frequency</th>
+                                <th>Category</th>
+                                <th>Refundable</th>
                                 <th>Source</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% if shop.result.community_info.application_fee %}
+                            {% for fee in shop.result.community_info.fees.all %}
                             <tr>
-                                <td>Application Fee</td>
-                                <td>${{ shop.result.community_info.application_fee }}</td>
+                                <td>{{ fee.name }}</td>
                                 <td>
-                                    {% if shop.result.community_info.application_fee_source %}
-                                        <a href="{{ shop.result.community_info.application_fee_source }}" target="_blank">Source</a>
+                                    {% if fee.amount %}
+                                        ${{ fee.amount }}
+                                    {% else %}
+                                        {{ fee.description|default:"Variable" }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ fee.get_frequency_display }}</span>
+                                </td>
+                                <td>
+                                    {% if fee.fee_category %}
+                                        <span class="badge bg-secondary">{{ fee.fee_category }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if fee.refundable %}
+                                        <span class="badge bg-success">Yes</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">No</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if fee.source_url %}
+                                        <a href="{{ fee.source_url }}" target="_blank" class="btn btn-sm btn-outline-primary">Source</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if fee.description and fee.amount %}
+                            <tr>
+                                <td colspan="6" class="text-muted small">
+                                    <strong>Description:</strong> {{ fee.description }}
+                                    {% if fee.conditions %}
+                                        <br><strong>Conditions:</strong> {{ fee.conditions }}
                                     {% endif %}
                                 </td>
                             </tr>
                             {% endif %}
-                            
-                            {% if shop.result.community_info.administration_fee %}
-                            <tr>
-                                <td>Administration Fee</td>
-                                <td>${{ shop.result.community_info.administration_fee }}</td>
-                                <td>
-                                    {% if shop.result.community_info.administration_fee_source %}
-                                        <a href="{{ shop.result.community_info.administration_fee_source }}" target="_blank">Source</a>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endif %}
-                            
-                            {% if shop.result.community_info.membership_fee %}
-                            <tr>
-                                <td>Membership Fee</td>
-                                <td>{{ shop.result.community_info.membership_fee }}</td>
-                                <td>
-                                    {% if shop.result.community_info.membership_fee_source %}
-                                        <a href="{{ shop.result.community_info.membership_fee_source }}" target="_blank">Source</a>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endif %}
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
+            {% endif %}
             
             <div class="row mb-3">
                 <div class="col-md-6">

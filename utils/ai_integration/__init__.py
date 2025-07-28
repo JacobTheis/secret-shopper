@@ -7,24 +7,20 @@ This package provides AI-powered agents for:
 
 Usage:
     from utils.ai_integration.service import (
-        create_information_gathering_service,
         create_persona_generation_service,
         create_conversation_service
     )
     
     # Create services
-    info_service = create_information_gathering_service()
     persona_service = create_persona_generation_service()
     email_service = create_conversation_service('initial')
     
     # Use services
-    community_data = await info_service.run("https://example.com")
     persona = await persona_service.run("Generate a young professional persona")
     email = await email_service.run("Write an inquiry email")
 """
 
 from .service import (
-    create_information_gathering_service,
     create_persona_generation_service,
     create_conversation_service,
     MultiProviderAIService,
@@ -52,7 +48,6 @@ from .agent_config import (
 
 __all__ = [
     # Service layer
-    'create_information_gathering_service',
     'create_persona_generation_service',
     'create_conversation_service',
     'MultiProviderAIService',

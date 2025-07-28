@@ -113,6 +113,75 @@ class Amenity(models.Model):
         return self.name
 
 
+class Fee(models.Model):
+    """Represents a fee associated with a community."""
+    
+    class Frequency(models.TextChoices):
+        ONE_TIME = "ONE_TIME", "One-time"
+        MONTHLY = "MONTHLY", "Monthly"
+        ANNUAL = "ANNUAL", "Annual"
+        CONDITIONAL = "CONDITIONAL", "Conditional"
+    
+    community_info = models.ForeignKey(
+        'CommunityInfo',
+        on_delete=models.CASCADE,
+        related_name="fees",
+        help_text="The community this fee belongs to.",
+    )
+    name = models.CharField(
+        max_length=255,
+        help_text="The name or title of the fee (e.g., 'Application Fee', 'Pet Deposit').",
+    )
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="The fee amount. Can be null if the fee has no specific amount.",
+    )
+    description = models.TextField(
+        blank=True,
+        help_text="Detailed description of what the fee covers.",
+    )
+    refundable = models.BooleanField(
+        default=False,
+        help_text="Whether this fee is refundable.",
+    )
+    frequency = models.CharField(
+        max_length=20,
+        choices=Frequency.choices,
+        default=Frequency.ONE_TIME,
+        help_text="How often this fee is charged.",
+    )
+    fee_category = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Category of the fee (e.g., 'Application', 'Administrative', 'Pet').",
+    )
+    source_url = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="The source URL where this fee information was found.",
+    )
+    conditions = models.TextField(
+        blank=True,
+        help_text="Any conditions or requirements for this fee.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Fee"
+        verbose_name_plural = "Fees"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        """String representation of the Fee model."""
+        amount_str = f"${self.amount}" if self.amount else "Variable"
+        return f"{self.name} ({amount_str}) for {self.community_info}"
+
+
 class CommunityInfo(models.Model):
     """Stores the structured information gathered about a community."""
 
@@ -133,44 +202,6 @@ class CommunityInfo(models.Model):
         blank=True,
         null=True,
         help_text="The link to the community's homepage or relevant page.",
-    )
-    application_fee = models.DecimalField(
-        max_digits=8,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        help_text="The fee charged for applying.",
-    )
-    application_fee_source = models.URLField(
-        max_length=500,
-        blank=True,
-        null=True,
-        help_text="The source URL for the application fee.",
-    )
-    administration_fee = models.DecimalField(
-        max_digits=8,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        help_text="The one-time administrative fee.",
-    )
-    administration_fee_source = models.URLField(
-        max_length=500,
-        blank=True,
-        null=True,
-        help_text="The source URL for the administration fee.",
-    )
-    membership_fee = models.CharField(
-        max_length=500,
-        null=True,
-        blank=True,
-        help_text="Recurring membership or resident benefit package fee.",
-    )
-    membership_fee_source = models.URLField(
-        max_length=500,
-        blank=True,
-        null=True,
-        help_text="The source URL for the membership fee.",
     )
     pet_policy = models.TextField(
         blank=True, help_text="The community's policy and fees on pets."
@@ -198,6 +229,35 @@ class CommunityInfo(models.Model):
         blank=True,
         null=True,
         help_text="The software provider for the resident portal.",
+    )
+    street_address = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="The street address found in community data.",
+    )
+    city = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="The city found in community data.",
+    )
+    state = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text="The state found in community data.",
+    )
+    zip_code = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="The zip code found in community data.",
+    )
+    special_offers = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Any special offers or promotions currently available.",
     )
     community_amenities = models.ManyToManyField(
         Amenity,
@@ -298,6 +358,17 @@ class FloorPlan(models.Model):
         null=True,
         blank=True,
         help_text="Security deposit amount.",
+    )
+    image = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="URL to the floor plan image if available.",
+    )
+    num_available = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Number of units available for rent in this floor plan.",
     )
     amenities = models.ManyToManyField(
         Amenity,

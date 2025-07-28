@@ -5,3 +5,7 @@ redis
 openai
 pydantic-ai
 anthropic
+reportlab
+playwright
+beautifulsoup4
+httpx

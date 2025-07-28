@@ -1,5 +1,6 @@
 """Tests for PydanticAI agents and services."""
 import unittest
+import pytest
 from unittest.mock import Mock, patch, AsyncMock
 from pydantic_ai.models import Model
 from pydantic_ai import Agent
@@ -16,7 +17,7 @@ from .schemas import (
 )
 from .service import MultiProviderAIService, AIServiceError, AIServiceUnavailableError
 from .agent_config import AgentConfig, get_agent_config, get_model_for_agent
-from .agents import InformationGatheringAgent, PersonaGenerationAgent, ConversationAgent
+from .agents import PersonaGenerationAgent, ConversationAgent
 
 
 class TestAgentConfig:
@@ -38,7 +39,7 @@ class TestAgentConfig:
     
     def test_get_agent_config_valid_type(self):
         """Test getting configuration for a valid agent type."""
-        config = get_agent_config('information_gathering')
+        config = get_agent_config('persona_generation')
         assert 'primary_service' in config
         assert 'system_prompt' in config
     
@@ -150,10 +151,19 @@ class TestMultiProviderAIService:
         """Create a mock agent."""
         agent = Mock(spec=Agent)
         mock_result = Mock()
-        mock_result.data = CommunityInformation(
-            name="Test Community",
-            overview="Test overview",
-            url="https://example.com"
+        mock_result.data = PersonaDetails(
+            name="John Doe",
+            age=30,
+            occupation="Software Engineer",
+            email="john@example.com",
+            phone="555-0123",
+            timeline="Within 2 months",
+            key_question="Pet policy questions",
+            interest_point="Amenities",
+            communication_style="Professional",
+            budget_range="$2000-$2500",
+            background_story="Recently relocated for work",
+            priorities=["Pet-friendly", "Close to work"]
         )
         agent.run = AsyncMock(return_value=mock_result)
         return agent
@@ -170,7 +180,7 @@ class TestMultiProviderAIService:
                 'system_prompt': 'Test prompt'
             }
             
-            service = MultiProviderAIService('information_gathering', CommunityInformation)
+            service = MultiProviderAIService('persona_generation', PersonaDetails)
             service.primary_agent = mock_agent
             service.fallback_agent = mock_agent
             return service
@@ -180,8 +190,8 @@ class TestMultiProviderAIService:
         """Test successful run with primary agent."""
         result = await mock_service.run("Test prompt")
         
-        assert isinstance(result, CommunityInformation)
-        assert result.name == "Test Community"
+        assert isinstance(result, PersonaDetails)
+        assert result.name == "John Doe"
         mock_service.primary_agent.run.assert_called_once()
     
     @pytest.mark.asyncio
@@ -192,7 +202,7 @@ class TestMultiProviderAIService:
         
         result = await mock_service.run("Test prompt")
         
-        assert isinstance(result, CommunityInformation)
+        assert isinstance(result, PersonaDetails)
         mock_service.primary_agent.run.assert_called_once()
         mock_service.fallback_agent.run.assert_called_once()
     
@@ -229,42 +239,22 @@ class TestAgents:
     def mock_agent_result(self):
         """Create a mock agent result."""
         mock_result = Mock()
-        mock_result.data = CommunityInformation(
-            name="Test Community",
-            overview="Test overview", 
-            url="https://example.com"
+        mock_result.data = PersonaDetails(
+            name="John Doe",
+            age=30,
+            occupation="Software Engineer",
+            email="john@example.com",
+            phone="555-0123",
+            timeline="Within 2 months",
+            key_question="Pet policy questions",
+            interest_point="Amenities",
+            communication_style="Professional",
+            budget_range="$2000-$2500",
+            background_story="Recently relocated for work",
+            priorities=["Pet-friendly", "Close to work"]
         )
         return mock_result
     
-    @patch('utils.ai_integration.agents.get_model_for_agent')
-    @patch('utils.ai_integration.agents.get_agent_config')
-    def test_information_gathering_agent_init(self, mock_config, mock_get_model):
-        """Test InformationGatheringAgent initialization."""
-        mock_config.return_value = {'system_prompt': 'Test prompt'}
-        mock_get_model.return_value = Mock(spec=Model)
-        
-        agent = InformationGatheringAgent()
-        
-        mock_config.assert_called_once_with('information_gathering')
-        mock_get_model.assert_called_once_with('information_gathering')
-        assert agent.agent is not None
-    
-    @patch('utils.ai_integration.agents.get_model_for_agent')
-    @patch('utils.ai_integration.agents.get_agent_config')
-    @pytest.mark.asyncio
-    async def test_information_gathering_extract_community_info(self, mock_config, mock_get_model, mock_agent_result):
-        """Test community info extraction."""
-        mock_config.return_value = {'system_prompt': 'Test prompt'}
-        mock_get_model.return_value = Mock(spec=Model)
-        
-        agent = InformationGatheringAgent()
-        agent.agent.run = AsyncMock(return_value=mock_agent_result)
-        
-        result = await agent.extract_community_info("https://example.com")
-        
-        assert isinstance(result, CommunityInformation)
-        assert result.name == "Test Community"
-        agent.agent.run.assert_called_once()
     
     @patch('utils.ai_integration.agents.get_model_for_agent')
     @patch('utils.ai_integration.agents.get_agent_config')
@@ -301,17 +291,6 @@ class TestAgents:
 class TestServiceCreators:
     """Tests for service creator functions."""
     
-    @patch('utils.ai_integration.service.MultiProviderAIService')
-    def test_create_information_gathering_service(self, mock_service_class):
-        """Test information gathering service creation."""
-        from .service import create_information_gathering_service
-        
-        create_information_gathering_service()
-        
-        mock_service_class.assert_called_once()
-        args = mock_service_class.call_args[0]
-        assert args[0] == 'information_gathering'
-        assert args[1] == CommunityInformation
     
     @patch('utils.ai_integration.service.MultiProviderAIService')
     def test_create_persona_generation_service(self, mock_service_class):

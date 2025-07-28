@@ -27,6 +27,11 @@
                 </form>
                 <a href="{% url 'targets:update' target.pk %}" class="btn btn-primary btn-sm ms-1">Edit Target</a>
                 <a href="{% url 'targets:delete' target.pk %}" class="btn btn-danger btn-sm ms-1">Delete Target</a>
+                {% if latest_completed_shop %}
+                    <a href="{% url 'targets:export_report' target.pk %}" class="btn btn-success btn-sm ms-1">
+                        <i class="fas fa-file-pdf"></i> Export Report
+                    </a>
+                {% endif %}
                 <a href="{% url 'targets:index' %}" class="btn btn-secondary btn-sm ms-1">Back to List</a>
             </div>
         </div>
@@ -65,14 +70,78 @@
                         <dt class="col-sm-3">URL:</dt>
                         <dd class="col-sm-9">{% if latest_shop_info.url %}<a href="{{ latest_shop_info.url }}" target="_blank" rel="noopener noreferrer">{{ latest_shop_info.url }}</a>{% else %}N/A{% endif %}</dd>
 
-                        <dt class="col-sm-3">Application Fee:</dt>
-                        <dd class="col-sm-9">${{ latest_shop_info.application_fee|floatformat:2|default:"N/A" }} {% if latest_shop_info.application_fee_source %}(<a href="{{ latest_shop_info.application_fee_source }}" target="_blank" rel="noopener noreferrer">Source</a>){% endif %}</dd>
-
-                        <dt class="col-sm-3">Administration Fee:</dt>
-                        <dd class="col-sm-9">${{ latest_shop_info.administration_fee|floatformat:2|default:"N/A" }} {% if latest_shop_info.administration_fee_source %}(<a href="{{ latest_shop_info.administration_fee_source }}" target="_blank" rel="noopener noreferrer">Source</a>){% endif %}</dd>
-
-                        <dt class="col-sm-3">Membership Fee:</dt>
-                        <dd class="col-sm-9">${{ latest_shop_info.membership_fee|floatformat:2|default:"N/A" }} {% if latest_shop_info.membership_fee_source %}(<a href="{{ latest_shop_info.membership_fee_source }}" target="_blank" rel="noopener noreferrer">Source</a>){% endif %}</dd>
+                        <dt class="col-sm-3">Fees:</dt>
+                        <dd class="col-sm-9">
+                            {% if grouped_fees %}
+                                {% for source_key, source_group in grouped_fees.items %}
+                                    <div class="fee-source-group mb-4">
+                                        <h5 class="h6 mb-3 text-primary">
+                                            <i class="fas fa-link me-2"></i>{{ source_group.display_name }}
+                                            {% if source_group.url %}
+                                                <a href="{{ source_group.url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary ms-2">
+                                                    <i class="fas fa-external-link-alt"></i> View Source
+                                                </a>
+                                            {% endif %}
+                                        </h5>
+                                        
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-striped mb-3">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Fee Name</th>
+                                                        <th>Amount</th>
+                                                        <th>Frequency</th>
+                                                        <th>Category</th>
+                                                        <th>Refundable</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for fee in source_group.fees %}
+                                                    <tr>
+                                                        <td>{{ fee.name }}</td>
+                                                        <td>
+                                                            {% if fee.amount %}
+                                                                ${{ fee.amount|floatformat:2 }}
+                                                            {% else %}
+                                                                <span class="text-muted">Variable</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td><small class="badge bg-info">{{ fee.get_frequency_display }}</small></td>
+                                                        <td>
+                                                            {% if fee.fee_category %}
+                                                                <small class="badge bg-secondary">{{ fee.fee_category }}</small>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {% if fee.refundable %}
+                                                                <small class="badge bg-success">Yes</small>
+                                                            {% else %}
+                                                                <small class="badge bg-danger">No</small>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    {% if fee.description or fee.conditions %}
+                                                    <tr>
+                                                        <td colspan="5" class="text-muted small border-top-0 ps-4">
+                                                            {% if fee.description %}
+                                                                <strong>Description:</strong> {{ fee.description }}
+                                                            {% endif %}
+                                                            {% if fee.conditions %}
+                                                                <br><strong>Conditions:</strong> {{ fee.conditions }}
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    {% endif %}
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted">No fees found</span>
+                            {% endif %}
+                        </dd>
 
                         <dt class="col-sm-3">Pet Policy:</dt>
                         <dd class="col-sm-9">{{ latest_shop_info.pet_policy|default:"N/A"|linebreaksbr }} {% if latest_shop_info.pet_policy_source %}(<a href="{{ latest_shop_info.pet_policy_source }}" target="_blank" rel="noopener noreferrer">Source</a>){% endif %}</dd>
@@ -116,7 +185,15 @@
                                     <div class="card h-100">
                                         <div class="card-body">
                                             <h4 class="card-title h6">{{ plan.name|default:"Unnamed Plan" }}</h4>
+                                            {% if plan.image %}
+                                                <div class="floor-plan-image mb-2">
+                                                    <img src="{{ plan.image }}" alt="Floor plan for {{ plan.name }}" class="img-fluid rounded" style="max-height: 200px; width: auto;">
+                                                </div>
+                                            {% endif %}
                                             <p class="card-text mb-1"><strong>Type:</strong> {{ plan.type|default:"N/A" }}</p>
+                                            {% if plan.num_available %}
+                                                <p class="card-text mb-1"><strong>Available:</strong> {{ plan.num_available }} unit{{ plan.num_available|pluralize }}</p>
+                                            {% endif %}
                                             <p class="card-text mb-1"><strong>Beds/Baths:</strong> {{ plan.beds|default:"?" }}/{{ plan.baths|default:"?" }}</p>
                                             <p class="card-text mb-1"><strong>SqFt:</strong> {{ plan.sqft|default:"N/A" }}</p>
                                             <p class="card-text mb-1"><strong>Rent:</strong> ${{ plan.min_rental_price|floatformat:2|default:"N/A" }} - ${{ plan.max_rental_price|floatformat:2|default:"N/A" }}</p>
@@ -170,6 +247,36 @@
         </div> {# /card-body #}
     </div> {# /card #}
 </div> {# /container #}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.fee-source-group {
+    border: 1px solid #e9ecef;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+.fee-source-group:last-child {
+    margin-bottom: 0 !important;
+}
+
+.fee-source-group h5 {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.fee-source-group .table {
+    background-color: white;
+    margin-bottom: 0;
+}
+
+.fee-source-group .table thead {
+    border-bottom: 2px solid #dee2e6;
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}

@@ -16,4 +16,6 @@ urlpatterns = [
     path('<uuid:pk>/delete/', views.TargetDeleteView.as_view(), name='delete'),
     # URL to trigger the start of a new shop's info gathering phase
     path('<uuid:pk>/start-shop/', views.StartShopView.as_view(), name='start_shop'),
+    # Export report as PDF
+    path('<uuid:pk>/export-report/', views.ExportReportView.as_view(), name='export_report'),
 ]

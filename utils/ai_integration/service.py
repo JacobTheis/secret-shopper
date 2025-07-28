@@ -150,12 +150,6 @@ class MultiProviderAIService:
 
 
 # Convenience functions for creating service instances
-def create_information_gathering_service():
-    """Create an information gathering service instance."""
-    from .agents import InformationGatheringAgent
-    return InformationGatheringAgent()
-
-
 def create_master_orchestrator_service():
     """Create a master orchestrator service instance."""
     from .agents import MasterOrchestratorAgent

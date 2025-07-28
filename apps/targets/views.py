@@ -82,9 +82,76 @@ class TargetDetailView(LoginRequiredMixin, DetailView):
                 # Add logging for debugging missing related objects
                 logger.warning(f"Could not find community info for Shop ID {latest_completed_shop.id}: {e}")
 
+        # Group fees by source for better organization
+        grouped_fees = {}
+        if latest_shop_info:
+            fees = latest_shop_info.fees.all()
+            for fee in fees:
+                # Use source URL as the key, or 'Unknown Source' if not available
+                source_key = fee.source_url if fee.source_url else 'Unknown Source'
+                
+                # Extract a friendly name from the URL for display
+                if fee.source_url:
+                    try:
+                        from urllib.parse import urlparse
+                        parsed_url = urlparse(fee.source_url)
+                        
+                        # Create a friendly name from the URL path
+                        path_parts = [part for part in parsed_url.path.split('/') if part]
+                        
+                        # Get the domain name for display
+                        domain = parsed_url.netloc or 'unknown'
+                        
+                        if path_parts:
+                            # Use the last meaningful part of the path
+                            last_part = path_parts[-1]
+                            
+                            # Handle common page names and convert to friendly names
+                            friendly_names = {
+                                'fees': 'Fees Page',
+                                'pricing': 'Pricing Page', 
+                                'application': 'Application Page',
+                                'pet-policy': 'Pet Policy Page',
+                                'pet_policy': 'Pet Policy Page',
+                                'amenities': 'Amenities Page',
+                                'lease': 'Lease Information',
+                                'terms': 'Terms & Conditions',
+                                'faq': 'FAQ Page',
+                                'contact': 'Contact Page'
+                            }
+                            
+                            # Check if we have a specific friendly name
+                            last_part_clean = last_part.lower().replace('.html', '').replace('.php', '')
+                            if last_part_clean in friendly_names:
+                                page_title = friendly_names[last_part_clean]
+                            else:
+                                # Convert to title case and clean up
+                                page_title = last_part.replace('-', ' ').replace('_', ' ').replace('.html', '').replace('.php', '').title()
+                                if not page_title.strip():
+                                    page_title = 'Main Website'
+                            
+                            # Format as "Page Title (domain.com)"
+                            source_display = f"{page_title} ({domain})"
+                        else:
+                            # No path, use domain name with "Main Website" title
+                            source_display = f"Main Website ({domain})"
+                    except Exception:
+                        source_display = fee.source_url
+                else:
+                    source_display = 'Unknown Source'
+                
+                if source_key not in grouped_fees:
+                    grouped_fees[source_key] = {
+                        'display_name': source_display,
+                        'url': fee.source_url,
+                        'fees': []
+                    }
+                grouped_fees[source_key]['fees'].append(fee)
+
         context['title'] = f'Target Details: {target.name}' # Add a title for the page
         context['latest_completed_shop'] = latest_completed_shop
         context['latest_shop_info'] = latest_shop_info
+        context['grouped_fees'] = grouped_fees
         return context
 
 
@@ -205,3 +272,219 @@ class StartShopView(LoginRequiredMixin, View):
         target_pk = kwargs.get('pk')
         messages.error(request, "Invalid request method.")
         return redirect('targets:detail', pk=target_pk)
+
+
+class ExportReportView(LoginRequiredMixin, View):
+    """Export target report as PDF."""
+    login_url = '/accounts/login/'
+    redirect_field_name = 'next'
+
+    def get(self, request, *args, **kwargs):
+        """Generate and return PDF report for the target."""
+        from django.http import HttpResponse
+        from reportlab.lib.pagesizes import letter, A4
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        from reportlab.lib import colors
+        from io import BytesIO
+        from datetime import datetime
+
+        target_pk = kwargs.get('pk')
+        target = get_object_or_404(Target, pk=target_pk)
+
+        # Get the latest completed shop information
+        latest_completed_shop = Shop.objects.filter(
+            target=target,
+            status=Shop.Status.COMPLETED
+        ).order_by('-updated_at').first()
+
+        if not latest_completed_shop:
+            messages.error(request, "No completed shop results found for this target.")
+            return redirect('targets:detail', pk=target_pk)
+
+        # Get community info
+        latest_shop_info = None
+        try:
+            if hasattr(latest_completed_shop, 'result') and \
+               hasattr(latest_completed_shop.result, 'community_info'):
+                latest_shop_info = latest_completed_shop.result.community_info
+            elif CommunityInfo.objects.filter(shop_result__shop=latest_completed_shop).exists():
+                latest_shop_info = CommunityInfo.objects.get(shop_result__shop=latest_completed_shop)
+        except (ShopResult.DoesNotExist, CommunityInfo.DoesNotExist, AttributeError):
+            latest_shop_info = None
+
+        if not latest_shop_info:
+            messages.error(request, "No community information found for this target.")
+            return redirect('targets:detail', pk=target_pk)
+
+        # Create PDF
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72,
+                              topMargin=72, bottomMargin=18)
+
+        # Container for the 'Flowable' objects
+        elements = []
+
+        # Get styles
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=18,
+            spaceAfter=30,
+            textColor=colors.darkblue
+        )
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
+            fontSize=14,
+            spaceAfter=12,
+            textColor=colors.darkblue
+        )
+
+        # Title
+        elements.append(Paragraph(f"Secret Shop Report: {target.name}", title_style))
+        elements.append(Spacer(1, 12))
+
+        # Report metadata
+        elements.append(Paragraph(f"Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}", styles['Normal']))
+        elements.append(Paragraph(f"Shop Completed: {latest_completed_shop.end_time.strftime('%B %d, %Y at %I:%M %p') if latest_completed_shop.end_time else 'N/A'}", styles['Normal']))
+        elements.append(Spacer(1, 20))
+
+        # Target Information
+        elements.append(Paragraph("Target Property Information", heading_style))
+        elements.append(Paragraph(f"<b>• Property Name:</b> {target.name}", styles['Normal']))
+        elements.append(Paragraph(f"<b>• Address:</b> {f'{target.street_address or ''} {target.city or ''} {target.state or ''} {target.zip_code or ''}'.strip() or 'N/A'}", styles['Normal']))
+        elements.append(Paragraph(f"<b>• Email:</b> {target.email_address or 'N/A'}", styles['Normal']))
+        elements.append(Paragraph(f"<b>• Phone:</b> {target.phone_number or 'N/A'}", styles['Normal']))
+        elements.append(Paragraph(f"<b>• Website:</b> {target.website or 'N/A'}", styles['Normal']))
+        elements.append(Paragraph(f"<b>• Owner(s):</b> {target.owners or 'N/A'}", styles['Normal']))
+        elements.append(Paragraph(f"<b>• Property Manager:</b> {target.property_manager or 'N/A'}", styles['Normal']))
+        elements.append(Spacer(1, 20))
+
+        # Community Information
+        elements.append(Paragraph("Community Information", heading_style))
+        elements.append(Paragraph(f"<b>Name:</b> {latest_shop_info.name or 'N/A'}", styles['Normal']))
+        elements.append(Spacer(1, 6))
+        
+        if latest_shop_info.overview:
+            elements.append(Paragraph(f"<b>Overview:</b> {latest_shop_info.overview}", styles['Normal']))
+            elements.append(Spacer(1, 6))
+        
+        if latest_shop_info.url:
+            elements.append(Paragraph(f"<b>Website:</b> {latest_shop_info.url}", styles['Normal']))
+            elements.append(Spacer(1, 6))
+
+        # Fees Information
+        fees = latest_shop_info.fees.all()
+        if fees:
+            elements.append(Spacer(1, 12))
+            elements.append(Paragraph("Fees", heading_style))
+            
+            for fee in fees:
+                amount_str = f"${fee.amount}" if fee.amount else "Variable"
+                refundable_str = "Yes" if fee.refundable else "No"
+                
+                elements.append(Paragraph(f"<b>• {fee.name}</b>", styles['Normal']))
+                elements.append(Paragraph(f"&nbsp;&nbsp;◦ Amount: {amount_str}", styles['Normal']))
+                elements.append(Paragraph(f"&nbsp;&nbsp;◦ Frequency: {fee.get_frequency_display()}", styles['Normal']))
+                elements.append(Paragraph(f"&nbsp;&nbsp;◦ Category: {fee.fee_category or 'N/A'}", styles['Normal']))
+                elements.append(Paragraph(f"&nbsp;&nbsp;◦ Refundable: {refundable_str}", styles['Normal']))
+                
+                if fee.description:
+                    elements.append(Paragraph(f"&nbsp;&nbsp;◦ Description: {fee.description}", styles['Normal']))
+                if fee.conditions:
+                    elements.append(Paragraph(f"&nbsp;&nbsp;◦ Conditions: {fee.conditions}", styles['Normal']))
+                
+                elements.append(Spacer(1, 6))
+
+        # Floor Plans
+        floor_plans = latest_shop_info.floor_plans.all()
+        if floor_plans:
+            elements.append(Spacer(1, 20))
+            elements.append(Paragraph("Floor Plans", heading_style))
+            
+            for plan in floor_plans:
+                rent_range = "N/A"
+                if plan.min_rental_price and plan.max_rental_price:
+                    rent_range = f"${plan.min_rental_price} - ${plan.max_rental_price}"
+                elif plan.min_rental_price:
+                    rent_range = f"${plan.min_rental_price}"
+                elif plan.max_rental_price:
+                    rent_range = f"Up to ${plan.max_rental_price}"
+                
+                deposit = f"${plan.security_deposit}" if plan.security_deposit else "N/A"
+                
+                elements.append(Paragraph(f"<b>• {plan.name}</b>", styles['Normal']))
+                elements.append(Paragraph(f"&nbsp;&nbsp;◦ Type: {plan.type or 'N/A'}", styles['Normal']))
+                elements.append(Paragraph(f"&nbsp;&nbsp;◦ Bedrooms: {plan.beds if plan.beds is not None else 'N/A'}", styles['Normal']))
+                elements.append(Paragraph(f"&nbsp;&nbsp;◦ Bathrooms: {plan.baths if plan.baths is not None else 'N/A'}", styles['Normal']))
+                elements.append(Paragraph(f"&nbsp;&nbsp;◦ Square Footage: {plan.sqft if plan.sqft else 'N/A'}", styles['Normal']))
+                elements.append(Paragraph(f"&nbsp;&nbsp;◦ Rent Range: {rent_range}", styles['Normal']))
+                elements.append(Paragraph(f"&nbsp;&nbsp;◦ Security Deposit: {deposit}", styles['Normal']))
+                
+                # Add floor plan amenities
+                plan_amenities = plan.amenities.all()
+                if plan_amenities:
+                    elements.append(Paragraph("&nbsp;&nbsp;◦ Amenities:", styles['Normal']))
+                    for amenity in plan_amenities:
+                        elements.append(Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;▪ {amenity.name}", styles['Normal']))
+                
+                if plan.url:
+                    elements.append(Paragraph(f"&nbsp;&nbsp;◦ Details URL: {plan.url}", styles['Normal']))
+                
+                elements.append(Spacer(1, 8))
+
+        # Community Amenities
+        community_amenities = latest_shop_info.community_amenities.all()
+        if community_amenities:
+            elements.append(Spacer(1, 20))
+            elements.append(Paragraph("Community Amenities", heading_style))
+            
+            for amenity in community_amenities:
+                elements.append(Paragraph(f"• {amenity.name}", styles['Normal']))
+                if amenity.description:
+                    elements.append(Paragraph(f"&nbsp;&nbsp;◦ {amenity.description}", styles['Normal']))
+
+        # Community Pages
+        community_pages = latest_shop_info.pages.all()
+        if community_pages:
+            elements.append(Spacer(1, 20))
+            elements.append(Paragraph("Community Pages", heading_style))
+            
+            for page in community_pages:
+                elements.append(Paragraph(f"<b>• {page.name}</b>", styles['Normal']))
+                if page.overview:
+                    elements.append(Paragraph(f"&nbsp;&nbsp;◦ Description: {page.overview}", styles['Normal']))
+                elements.append(Paragraph(f"&nbsp;&nbsp;◦ URL: {page.url}", styles['Normal']))
+                elements.append(Spacer(1, 4))
+
+        # Additional Information
+        if latest_shop_info.pet_policy or latest_shop_info.office_hours:
+            elements.append(Spacer(1, 20))
+            elements.append(Paragraph("Additional Information", heading_style))
+            
+            if latest_shop_info.pet_policy:
+                elements.append(Paragraph(f"<b>Pet Policy:</b> {latest_shop_info.pet_policy}", styles['Normal']))
+                elements.append(Spacer(1, 6))
+            
+            if latest_shop_info.office_hours:
+                elements.append(Paragraph(f"<b>Office Hours:</b> {latest_shop_info.office_hours}", styles['Normal']))
+                elements.append(Spacer(1, 6))
+            
+            if latest_shop_info.self_showings is not None:
+                showing_text = "Available" if latest_shop_info.self_showings else "Not available"
+                elements.append(Paragraph(f"<b>Self Showings:</b> {showing_text}", styles['Normal']))
+
+        # Build PDF
+        doc.build(elements)
+
+        # Create response
+        buffer.seek(0)
+        filename = f"secret_shop_report_{target.name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.pdf"
+        
+        response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response

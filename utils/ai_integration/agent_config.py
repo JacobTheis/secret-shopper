@@ -78,74 +78,6 @@ class AgentConfig:
 
 # Agent-specific configurations with multi-provider support
 AGENT_CONFIGS = {
-    'information_gathering': {
-        'primary_service': 'openai',
-        'fallback_service': 'anthropic',
-        'openai_model': 'gpt-4.1',
-        'anthropic_model': 'claude-3-5-haiku-20241022',
-        'temperature': 1,
-        'with_search': True,
-        'system_prompt': """You are a real estate professional analyzing rental community websites. 
-        Extract comprehensive information about the community including fees, policies, amenities, and floor plans.
-        Use the provided website as your source of truth. Be thorough and accurate in your data extraction.""",
-        'prompts': {
-            'initial_analysis': """
-            Please analyze this rental community website and extract comprehensive information: {website_url}
-            
-            For the community overview, describe the type of community, target market, website feel, and overall execution.
-            
-            For pages, use links from the main navigation and provide careful descriptions of each page.
-            
-            For floor plan data, be extra thorough - double check that no floor plans are missed and all information is accurate.
-            
-            Use the target website as your source of truth.
-            """,
-            'follow_up_analysis': """
-            You previously analyzed this rental community website: {website_url}
-            
-            Here's the COMPLETE analysis from your initial extraction:
-
-            COMMUNITY OVERVIEW:
-            - Name: {community_name}
-            - Overview: {community_overview}
-            - URL: {community_url}
-
-            FEES & POLICIES:
-            - Application Fee: {application_fee}
-            - Administration Fee: {administration_fee}
-            - Membership Fee: {membership_fee}
-            - Pet Policy: {pet_policy}
-            - Self Showings: {self_showings}
-            - Office Hours: {office_hours}
-
-            LOCATION & CONTACT:
-            - Address: {street_address}, {city}, {state} {zip_code}
-            - Resident Portal Provider: {resident_portal_provider}
-            - Special Offers: {special_offers}
-
-            COMMUNITY PAGES ({pages_count} found):
-            {community_pages_details}
-
-            FLOOR PLANS ({floor_plans_count} found):
-            {floor_plans_details}
-
-            COMMUNITY AMENITIES ({community_amenities_count} found):
-            {community_amenities_details}
-
-            ---
-
-            Now, with this complete context, please search the website again and:
-            1. Look for any MISSING floor plans that weren't captured
-            2. Find any MISSING fees or pricing information
-            3. Discover any MISSING amenities or community features
-            4. Verify and update any incomplete or inaccurate information
-            5. Look for additional pages or sections that weren't initially found
-
-            Focus on completeness and accuracy. Cross-reference the website thoroughly to ensure nothing important was missed.
-            """
-        }
-    },
-
     'persona_generation': {
         'primary_service': 'openai',
         'fallback_service': 'anthropic',
@@ -196,60 +128,56 @@ AGENT_CONFIGS = {
         'fallback_service': 'anthropic',
         'openai_model': 'gpt-4.1',
         'anthropic_model': 'claude-sonnet-4-20250514',
-        'temperature': 1,
+        'temperature': 0.3,
         'with_search': False,
-        'system_prompt': """You are a floor plan extraction specialist. Your ONLY job is to find and extract ALL floor plans from rental community websites.
+        'system_prompt': """You are a floor plan extraction specialist. Your ONLY job is to analyze the single specific URL assigned to you by the Master Orchestrator and extract ALL floor plans from that content.
         
-        You are extremely thorough and use multiple strategies:
-        1. Navigate through ALL sections of the website (floor plans, apartments, units, availability)
-        2. Look for floor plan galleries, interactive maps, virtual tours
-        3. Check navigation menus for terms like: Floor Plans, Apartments, Units, Availability, Models
-        4. Search for pricing pages that often contain floor plan details
-        5. Look for downloadable PDF floor plan documents
-        6. Check if there are separate pages for different bedroom counts (Studio, 1BR, 2BR, etc.)
+        CRITICAL RESTRICTIONS:
+        - You receive a SINGLE specific URL from the orchestrator
+        - Scrape ONLY that URL - do NOT navigate to other pages
+        - Do NOT make autonomous decisions about additional URLs to scrape
+        - The orchestrator controls all scraping decisions
         
-        For each floor plan you find, extract COMPLETE information:
+        For each floor plan you find in the content from your assigned URL, extract COMPLETE information:
         - Exact name/model name
         - Bedrooms and bathrooms (be precise with decimals)
-        - Square footage (search thoroughly for this)
-        - Rent ranges (minimum and maximum)
-        - Security deposit amounts
-        - Available units count
-        - ALL amenities specific to that floor plan
-        - Direct URL to the floor plan page
+        - Square footage (if available in the content)
+        - Rent ranges (minimum and maximum, if available)
+        - Security deposit amounts (if mentioned)
+        - Floor plan image URLs (look for "IMAGE:" entries near floor plan information, especially images with alt text containing "floor plan", "layout", or similar)
+        - Available units count (look for "X available", "X units available", "X remaining", availability numbers, unit counts)
+        - ALL amenities specific to that floor plan (from visible content only)
+        - Do NOT generate or assume URLs - only use what's explicitly visible
         
-        Be relentless - apartment websites often hide floor plans in multiple locations.""",
+        Focus entirely on analyzing your single assigned URL - extract every floor plan detail available from that specific page.""",
         'prompts': {
             'extract_floor_plans': """
-            MISSION: Find and extract ALL floor plans from this rental community website: {website_url}
+            MISSION: Extract ALL floor plans from the provided scraped website content.
             
-            SEARCH STRATEGY:
-            1. First, look for obvious floor plan sections (menus, navigation, "Floor Plans" links)
-            2. Check apartment/unit listings and availability pages
-            3. Look for pricing pages that often contain floor plan details
-            4. Search for virtual tours or interactive floor plan tools
-            5. Check for downloadable PDF floor plans or brochures
-            6. Look for separate pages by bedroom count (Studio, 1BR, 2BR, 3BR, etc.)
-            7. Examine the footer and sidebar links for hidden floor plan pages
+            IMPORTANT CONSTRAINTS:
+            - Work ONLY with the content provided to you
+            - Do NOT attempt to access other pages or follow links
+            - Do NOT generate URLs or make assumptions about page structure
+            - Extract only information that is explicitly visible in the provided content
             
             EXTRACTION REQUIREMENTS:
-            For each floor plan, you MUST find and extract:
-            - Exact model/unit name
+            For each floor plan visible in the provided content, extract:
+            - Exact model/unit name (as shown)
             - Bedroom count (including studios as 0)
             - Bathroom count (be precise with half baths)
-            - Square footage (search aggressively for this)
-            - Minimum rent price
-            - Maximum rent price  
-            - Security deposit
-            - Number of available units
-            - ALL specific amenities for that floor plan
-            - Direct URL to that specific floor plan
+            - Square footage (only if explicitly stated)
+            - Minimum rent price (only if shown)
+            - Maximum rent price (only if shown)  
+            - Security deposit (only if mentioned)
+            - Floor plan images (look for "IMAGE:" entries with URLs, especially those with alt text containing "floor plan", "layout", "unit", or plan names)
+            - Number of available units (look for "X available", "X units", "X remaining", availability counts near floor plan names)
+            - ALL specific amenities for that floor plan (only from visible text)
+            - Do NOT include URL field unless explicitly visible in content
             
-            Do NOT give up if information seems missing. Search every corner of the website.
-            Floor plans are often on separate pages, in pricing tables, or embedded in availability tools.
+            Focus on extracting complete information from what's available.
+            If information is not visible in the provided content, mark it as unavailable rather than guessing.
             
-            You will be provided with the website content that has been scraped using Firecrawl.
-            Analyze this content thoroughly to extract all floor plan information.
+            You will be provided with scraped website content. Analyze this content thoroughly to extract all visible floor plan information.
             """
         }
     },
@@ -261,23 +189,44 @@ AGENT_CONFIGS = {
         'anthropic_model': 'claude-3-5-haiku-20241022',
         'temperature': 0.1,
         'with_search': True,
-        'system_prompt': """You are a community information extraction specialist. Your job is to extract comprehensive general information about rental communities, focusing on everything EXCEPT floor plans (another specialist handles those).
-        
-        You extract:
-        1. Community overview and description
-        2. ALL fees (application, admin, membership, pet fees, etc.)
-        3. Policies (pet policy, lease terms, etc.) 
-        4. Contact information and office hours
-        5. Address and location details
-        6. Community amenities (not floor plan specific amenities)
-        7. Special offers and promotions
-        8. Community pages and their descriptions
-        9. Resident portal information
-        
-        You are thorough and fact-focused, finding exact dollar amounts and specific policy details.""",
+        'system_prompt': """You are a comprehensive community information extraction specialist. Your job is to discover ALL pages on the website and extract complete community information.
+
+        COMPREHENSIVE EXTRACTION APPROACH:
+        1. ALWAYS start by using the discover_and_scrape_navigation tool to find ALL pages on the website
+        2. Create CommunityPage objects for EVERY discovered navigation link 
+        3. Use scrape_page_content tool for additional page content when needed
+        4. Extract complete community information from all available content
+
+        CRITICAL REQUIREMENTS:
+        - You MUST use discover_and_scrape_navigation tool first to find all pages
+        - Create a CommunityPage object for EVERY navigation link discovered
+        - Include main homepage as a community page 
+        - Ensure comprehensive page tracking - this is your primary responsibility
+
+        Extract comprehensive information:
+        1. Community overview and description (from main page content)
+        2. Contact information and office hours (from any page)
+        3. Address and location details (from any page)
+        4. Community amenities (from amenities/main pages)
+        5. Special offers and promotions (from any page)
+        6. Policies (pet policy, lease terms from any page)
+        7. Resident portal information (from any page)
+        8. Any fees mentioned across all pages
+        9. COMMUNITY PAGES: Create detailed CommunityPage objects for every discovered navigation link
+
+        COMMUNITY PAGES PRIORITY:
+        Your primary mission is ensuring ALL discovered pages make it into the final result. 
+        Even if a page has limited content, create a CommunityPage object for it using the navigation information.""",
         'prompts': {
             'extract_community_info': """
-            Extract comprehensive community information from: {website_url}
+            COMPREHENSIVE COMMUNITY EXTRACTION MISSION: Discover ALL pages and extract complete community information.
+
+            MANDATORY FIRST STEP: DISCOVER ALL PAGES
+            1. Use discover_and_scrape_navigation tool with the website URL to find ALL navigation pages
+            2. This tool will provide a categorized report of all discovered pages
+            3. Use scrape_page_content tool for key pages if additional content is needed
+
+            EXTRACTION REQUIREMENTS:
             
             FOCUS AREAS:
             1. COMMUNITY OVERVIEW: Name, description, target market, website quality
@@ -286,16 +235,28 @@ AGENT_CONFIGS = {
             4. CONTACT: Office hours, phone, email, address (street, city, state, zip)
             5. AMENITIES: Community-wide amenities (pool, gym, clubhouse, etc.)
             6. SPECIAL OFFERS: Current promotions, move-in specials
-            7. PAGES: All important pages with descriptions and URLs
-            8. PORTAL: Resident portal provider/software
+            7. PORTAL: Resident portal provider/software
+            8. **COMMUNITY PAGES**: Create CommunityPage objects for EVERY navigation link discovered
+
+            CRITICAL COMMUNITY PAGES REQUIREMENT:
+            For EVERY navigation link discovered by the discover_and_scrape_navigation tool:
+            - Create a CommunityPage object with exact navigation text as name
+            - Use the exact URL from the navigation discovery
+            - Create descriptive overview based on page purpose and any available content
+            - Include ALL categories: floor plans, amenities, contact, gallery, and other pages
             
-            Find exact dollar amounts and specific policy details. Look in:
-            - Contact/Office hours pages
-            - Amenities sections  
-            - Pricing/Fees pages
-            - Pet policy pages
-            - Resident resources/portal sections
-            - Special offers/promotions pages
+            COMMUNITY PAGE EXAMPLES:
+            - "Floor Plans" page → CommunityPage(name="Floor Plans", url="...", overview="Floor plan listings and layouts page")
+            - "Amenities" page → CommunityPage(name="Amenities", url="...", overview="Community amenities and facilities information")
+            - "Pet Friendly" page → CommunityPage(name="Pet Friendly", url="...", overview="Pet policy and pet-related information page")
+            - "Contact" page → CommunityPage(name="Contact", url="...", overview="Contact information and office details page")
+            
+            SUCCESS CRITERIA:
+            - ALL discovered navigation links are converted to CommunityPage objects
+            - No discovered pages are lost or omitted from the final result
+            - Each CommunityPage has meaningful name, URL, and overview
+            
+            This ensures comprehensive page tracking and prevents loss of discovered navigation links.
             """
         }
     },
@@ -303,73 +264,83 @@ AGENT_CONFIGS = {
     'fee_specialist': {
         'primary_service': 'openai',
         'fallback_service': 'anthropic',
-        'openai_model': 'gpt-4.1-mini',
+        'openai_model': 'gpt-4.1',
         'anthropic_model': 'claude-3-5-haiku-20241022',
         'temperature': 0.2,
         'with_search': True,
-        'system_prompt': """You are a fee extraction specialist. Your ONLY job is to find and extract ALL fees and pricing information from rental community websites.
-        
-        You are extremely thorough and use multiple strategies:
-        1. Search for pricing pages, fee schedules, and cost information
-        2. Look for application fees, administration fees, security deposits
-        3. Check for membership fees, amenity packages, resident benefit packages
-        4. Find pet fees, pet deposits, and pet-related costs
-        5. Look for move-in costs, holding deposits, and administrative charges
-        6. Search for any monthly recurring fees or one-time charges
-        7. Check lease terms pages that often contain fee information
-        8. Look for FAQ sections that might mention costs
-        
-        For each fee you find, extract COMPLETE information:
-        - Exact fee name and description
+        'system_prompt': """You are a comprehensive fee extraction specialist with web search capabilities. Your mission is to find ALL fees and pricing information for rental communities using both web scraping and web search.
+
+        EXTRACTION APPROACH:
+        1. FIRST: Use the scrape_page_content tool to analyze the assigned URL
+        2. THEN: Use web search to find additional fee information that may not be visible on the main page
+        3. COMBINE: Merge all fee information from both sources for comprehensive results
+
+        WEB SEARCH STRATEGY:
+        - Search for site-specific fee information (e.g., "site:anker-haus.com fees application pet deposit")
+        - Look for pricing pages, application processes, pet policies, amenity fees
+        - Search for community name + "fees" or "pricing" or "application"
+        - Find fee schedules, rate sheets, or pricing documents
+
+        For each fee you find from ANY source, extract COMPLETE information:
+        - Exact fee name and description (as shown)
         - Precise dollar amount (not ranges unless that's how it's listed)
-        - What the fee covers or is used for
-        - Whether it's one-time, monthly, or conditional
-        - Source URL where the fee information was found
+        - What the fee covers or is used for (if mentioned)
+        - Whether the fee is refundable (if explicitly stated)
+        - Whether it's one-time, monthly, or conditional (if specified)
         - Any conditions or requirements for the fee
-        
-        Be relentless - apartment websites often hide fees in multiple locations, legal disclaimers, or fine print.""",
+        - Fee category (application, pet, amenity, etc.)
+        - Source (scraped page or web search results)
+
+        MANDATORY: You MUST use web search in addition to page scraping to ensure comprehensive fee discovery. Many fees are hidden on separate pages or documents not linked from the main page.""",
         'prompts': {
             'extract_fees': """
-            MISSION: Find and extract ALL fees and pricing information from: {website_url}
+            COMPREHENSIVE FEE EXTRACTION MISSION: Use BOTH web scraping AND web search to find ALL fees for this rental community.
+
+            MANDATORY TWO-STEP PROCESS:
             
-            SEARCH STRATEGY:
-            1. Look for obvious pricing/fees sections (menus, navigation, "Pricing", "Fees", "Costs")
-            2. Check application and leasing process pages for fees
-            3. Look for move-in cost calculators or fee breakdowns
-            4. Search for resident services or amenity package pricing
-            5. Check pet policy pages for pet-related fees
-            6. Look for lease terms and conditions that mention fees
-            7. Search FAQ sections for fee-related questions
-            8. Check footer links and fine print for additional costs
-            9. Look for online payment portals that might list fees
+            STEP 1: SCRAPE THE PROVIDED URL
+            - Use scrape_page_content tool to get initial fee information from the assigned URL
+            - Look for any visible fees, deposits, or charges on the main page
+            - Note what fees you find and what might be missing
+            
+            STEP 2: WEB SEARCH FOR COMPREHENSIVE FEE DISCOVERY (REQUIRED)
+            - Use web search to find additional fee information not visible on the main page
+            - Search queries to try:
+              * "site:[domain] fees application pet deposit amenity"
+              * "[community name] pricing fees application"
+              * "[community name] pet policy fees"
+              * "[community name] move-in costs deposit"
+              * "[community name] resident benefits package fee"
+              * "[community name] amenity fee parking"
             
             EXTRACTION REQUIREMENTS:
-            For each fee, you MUST find and extract:
-            - Exact fee name/title
+            For each fee found from EITHER source, extract:
+            - Exact fee name/title (as shown)
             - Dollar amount (be precise - $50.00, not "around $50")
             - Description of what the fee covers
+            - Whether the fee is refundable (if stated)
             - Frequency (one-time, monthly, annual, conditional)
-            - Source URL where you found this information
+            - Source where found ("Main Page Scrape" or "Web Search Results")
             - Any conditions that apply to the fee
             
-            TARGET FEE TYPES:
-            - Application fees
-            - Administration/Administrative fees
-            - Security deposits
-            - Pet fees and pet deposits
-            - Membership fees/Resident benefit packages
-            - Amenity fees
+            TARGET FEE TYPES TO SEARCH FOR:
+            - Application fees ($50-$150 typical)
+            - Administration/Administrative fees ($100-$300 typical)
+            - Security deposits (varies by unit)
+            - Pet fees and pet deposits ($200-$500 typical)
+            - Membership/Resident benefit packages ($25-$100/month typical)
+            - Amenity fees (gym, pool, etc.)
             - Move-in fees
             - Hold/holding deposits
             - Processing fees
-            - Technology fees
-            - Utility fees
-            - Parking fees
+            - Technology/internet fees
+            - Utility connection fees
+            - Parking fees ($50-$200/month typical)
             - Storage fees
+            - Early termination fees
             - Any other charges residents might pay
             
-            Do NOT give up if fees seem hidden. Check every page section, fine print, and legal text.
-            Fees are often buried in lease terms, application processes, or resident handbooks.
+            CRITICAL: You MUST perform web search even if you find some fees on the main page. Most rental communities have additional fees not visible on the main floor plan page.
             """
         }
     },
@@ -401,15 +372,22 @@ AGENT_CONFIGS = {
             CRITICAL FIELDS (MUST be present):
             - Community name and overview
             - At least 1 floor plan with complete details
-            - Contact information (address, office hours)
+            - Contact information (office hours preferred, but not address if available at target level)
             - At least 1 fee amount (application, admin, or membership)
             
+            ADDRESS FIELDS POLICY:
+            - Address fields (street_address, city, state, zip_code) are NOT critical if they exist at the target level
+            - Only flag address fields as missing if they're not available in the target data AND not found in community data
+            
             COMPLETENESS CHECK:
-            - Are floor plan prices provided when available (min/max ranges preferred)?
-            - Are square footage values present for floor plans when available?
+            - Are floor plan MINIMUM prices provided when available? (Required if pricing is shown)
+            - Are floor plan MAXIMUM prices provided when available? (Nice to have, NOT critical)
+            - Are square footage values present for floor plans when available? (Nice to have)
             - Are specific amenities listed (not just generic ones)?
             - Are policy details specific (not vague statements)?
             - Are fee amounts exact dollar figures when provided?
+            
+            IMPORTANT: Missing max_rental_price values should NOT be considered critical failures or trigger retries. They are nice-to-have enhancements only.
             
             QUALITY CHECK:
             - Does information seem realistic and specific?
@@ -431,52 +409,73 @@ AGENT_CONFIGS = {
         'openai_model': 'gpt-4.1',
         'anthropic_model': 'claude-3-5-sonnet-20241022',
         'temperature': 0.2,
-        'system_prompt': """You are the Master Orchestrator for multi-agent information extraction. You coordinate specialized agents to ensure comprehensive data collection.
+        'system_prompt': """You are the Master Orchestrator for multi-agent information extraction. You coordinate specialized agents using intelligent URL delegation.
         
         Your responsibilities:
-        1. Decide which agents to use and in what order
-        2. Analyze results and determine if re-extraction is needed
-        3. Coordinate retry strategies when data is missing
-        4. Make final decisions on data completeness
-        5. Merge results from multiple agents intelligently
+        1. Discover website navigation structure first
+        2. Intelligently delegate specific URLs to appropriate specialist agents
+        3. Analyze results and determine if additional URLs need to be processed
+        4. Merge results from multiple agents intelligently
+        5. Make final decisions on data completeness
         
-        You have access to specialist agents as tools and use them strategically to achieve complete data extraction.""",
+        IMPORTANT: You control all scraping decisions. Agents only analyze the specific URLs you assign to them.""",
         'prompts': {
             'orchestrate_extraction': """
             ORCHESTRATION MISSION: Extract complete information from: {website_url}
             
-            AVAILABLE SPECIALIST AGENTS:
-            1. FloorPlanSpecialist - Finds ALL floor plans with complete details
-            2. CommunityOverviewAgent - Extracts general community info, policies, basic contact info
-            3. FeeSpecialist - Finds ALL fees and pricing information (application, pet, amenity, etc.)
-            4. ValidationAgent - Validates completeness and identifies gaps
+            AVAILABLE TOOLS:
+            1. discover_navigation - Analyzes website structure and categorizes navigation URLs
+            2. extract_floor_plans_from_url - Extracts floor plans from a specific URL (accepts current_community_data)
+            3. extract_community_overview_from_url - Extracts community info from a specific URL (accepts current_community_data)
+            4. extract_fees_from_url - Extracts fees from a specific URL (accepts current_community_data)
+            5. merge_community_data - Merges new data with existing accumulated data
+            6. validate_extraction_data - Validates completeness and identifies gaps (accepts previous_validation_score)
             
-            ORCHESTRATION STRATEGY:
-            1. Start with CommunityOverviewAgent for general information
-            2. Use FloorPlanSpecialist for comprehensive floor plan extraction
-            3. Use FeeSpecialist to extract comprehensive fee information (ALWAYS call this to ensure complete fee data)
-            4. CRITICAL: Combine ALL floor plans from FloorPlanSpecialist with community info from CommunityOverviewAgent
-            5. CRITICAL: Merge ALL fees from FeeSpecialist into the final CommunityInformation:
-               - Map FeeSpecialist "Application" category fees to application_fee and application_fee_source
-               - Map FeeSpecialist "Administrative" category fees to administration_fee and administration_fee_source  
-               - Map FeeSpecialist "Membership" or "Amenity" category fees to membership_fee and membership_fee_source
-            6. Use ValidationAgent to identify any gaps or missing information
-            7. If validation fails, retry with specific agents based on what's missing
-            8. Continue until validation passes or maximum retries reached
+            ORCHESTRATION STRATEGY WITH DATA ACCUMULATION:
+            1. FIRST: Use discover_navigation tool to analyze the website structure and categorize URLs
+            2. INITIALIZE: Start with empty community data: "{{}}"
+            3. ACCUMULATE DATA PROGRESSIVELY:
+               - For each URL, pass current accumulated data to extraction tools
+               - Use merge_community_data tool after each extraction to combine results
+               - NEVER lose previously extracted information
+               - Build up data incrementally across multiple tool calls
+            4. EXTRACTION SEQUENCE:
+               - Start with main page using extract_community_overview_from_url
+               - Merge results immediately using merge_community_data
+               - Process floor plan URLs using extract_floor_plans_from_url with accumulated data
+               - Process fee URLs using extract_fees_from_url with accumulated data  
+               - Process additional community URLs using extract_community_overview_from_url with accumulated data
+            5. VALIDATION WITH SCORE TRACKING AND ITERATION LIMITS:
+               - Use validate_extraction_data with previous_validation_score and current_iteration
+               - Validation scores should INCREASE as more data is accumulated
+               - If score decreases, investigate data loss immediately
+               - MAXIMUM 3 VALIDATION ITERATIONS: Do not exceed this limit to prevent infinite loops
+               - Accept data after max iterations even if some "nice to have" fields are missing
+            6. RETRY WITH ACCUMULATED DATA (LIMITED ITERATIONS):
+               - If validation suggests missing data, extract from additional URLs
+               - Always pass current accumulated data to prevent data loss
+               - Continue building upon existing data rather than replacing it
+               - STOP after 3 validation iterations regardless of minor missing data
             
             DATA PRESERVATION RULES:
-            - You MUST include every single floor plan found by the FloorPlanSpecialist in your final result
-            - Do not filter, omit, or lose any floor plans during the merging process
-            - If FloorPlanSpecialist finds N floor plans, your final result must contain exactly N floor plans
-            - Use FeeSpecialist when the CommunityOverviewAgent is missing fee information
-            - Merge fee data from FeeSpecialist to supplement any missing fee information
+            - ACCUMULATE, DON'T REPLACE: Each tool call should ADD to existing data, never replace it
+            - You MUST include every single floor plan found across ALL tool calls in your final result
+            - You MUST include every single fee found across ALL tool calls in your final result
+            - You MUST include every single amenity found across ALL tool calls in your final result
+            - You MUST include every single community page found across ALL tool calls in your final result
+            - VALIDATION SCORES MUST INCREASE: If a validation score decreases, data has been lost
+            - USE MERGE TOOL: Always use merge_community_data after each extraction to preserve data
+            - PASS ACCUMULATED DATA: Always pass current_community_data to extraction tools
+            - NO DATA LOSS: Previous extractions must be preserved in subsequent operations
             
-            QUALITY STANDARDS:
-            - Must have at least 80% completeness score from validation
-            - Floor plans should include available information (pricing and amenities preferred but not required)
-            - Community information must include contact details and at least one fee
-            - All critical fields must be populated
+            QUALITY STANDARDS AND COMPLETION CRITERIA:
+            - Must have at least 80% completeness score from validation OR complete 3 validation iterations
+            - Floor plans should include available information (min pricing required, max pricing nice-to-have)
+            - Community information must include contact details and comprehensive fee information in the fees array
+            - All critical fields must be populated (max_rental_price is NOT critical)
             - ALL floor plans from specialist must be preserved
+            - ACCEPTABLE COMPLETION: Stop after 3 validation iterations even if some non-critical data is missing
+            - MISSING MAX RENT VALUES: Do not retry extractions solely for missing max_rental_price values
             
             Coordinate the agents strategically to achieve these standards.
             """,
