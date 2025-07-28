@@ -92,7 +92,7 @@ re-secret-shop/
 │   │   ├── models.py                # Target property models
 │   │   ├── forms.py
 │   │   ├── services/                # Business logic
-│   │   │   ├── __init__.py
+│ logging   │   │   ├── __init__.py
 │   │   │   ├── property_crawler.py  # Automated property information gathering
 │   │   │   └── target_manager.py    # Target management services
 │   │   ├── urls.py
