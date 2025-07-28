@@ -521,13 +521,13 @@ class DjangoWebScraper:
             return False
 
     async def extract_navigation_links(self, url: str) -> List[Dict[str, str]]:
-        """Extract all navigation and content links from a website.
+        """Extract all navigation and content links from a website, including modern JavaScript-based navigation.
 
         Args:
             url: The URL to extract links from
 
         Returns:
-            List of dictionaries with 'text', 'url', and 'description' keys
+            List of dictionaries with 'text', 'url', 'description', and 'selector_type' keys
         """
         try:
             # First scrape the main page
@@ -536,90 +536,303 @@ class DjangoWebScraper:
             # Extract all links with context
             navigation_links = []
             base_domain = self._get_base_domain(url)
-
-            # Look for navigation-specific elements first
-            nav_selectors = [
-                'nav a', 'header a', '.navigation a', '.nav a', '.menu a',
-                '.navbar a', '.main-nav a', '.primary-nav a', '.site-nav a',
-                '.header-nav a', '.top-nav a', '[role="navigation"] a'
-            ]
-
-            # Also look for content links that might be important pages
-            content_selectors = [
-                'main a', '.content a', '.main-content a', '.page-content a',
-                '.footer a', 'footer a', '.site-footer a'
-            ]
-
-            all_selectors = nav_selectors + content_selectors
             found_links = set()  # To avoid duplicates
 
-            for selector in all_selectors:
-                try:
-                    links = soup.select(selector)
-                    for link in links:
-                        href = link.get('href')
-                        if not href:
-                            continue
+            # Extract traditional href-based links
+            traditional_links = self._extract_traditional_links(soup, url, base_domain, found_links)
+            navigation_links.extend(traditional_links)
 
-                        # Convert relative URLs to absolute
-                        absolute_url = self._resolve_url(href, url)
-                        if not absolute_url or absolute_url in found_links:
-                            continue
+            # Extract modern JavaScript/clickable navigation elements
+            modern_links = self._extract_modern_navigation(soup, url, base_domain, found_links)
+            navigation_links.extend(modern_links)
 
-                        # Only include links from the same domain
-                        if not self._is_same_domain(absolute_url, base_domain):
-                            continue
-
-                        # Get link text and context
-                        link_text = link.get_text(strip=True)
-                        # Skip very long text
-                        if not link_text or len(link_text) > 100:
-                            continue
-
-                        # Skip common non-content links
-                        skip_patterns = [
-                            'javascript:', 'mailto:', 'tel:', '#',
-                            'login', 'sign in', 'register', 'logout',
-                            'privacy', 'terms', 'cookies', 'sitemap'
-                        ]
-
-                        if any(pattern in absolute_url.lower() or
-                               pattern in link_text.lower() for pattern in skip_patterns):
-                            continue
-
-                        # Get surrounding context for description
-                        parent = link.parent
-                        context = ''
-                        if parent:
-                            context = parent.get_text(strip=True)
-                            # Limit context length
-                            if len(context) > 200:
-                                context = context[:200] + '...'
-
-                        navigation_links.append({
-                            'text': link_text,
-                            'url': absolute_url,
-                            'description': context,
-                            'selector_type': 'navigation' if selector in nav_selectors else 'content'
-                        })
-                        found_links.add(absolute_url)
-
-                except Exception as e:
-                    logger.warning(f"Error processing selector '{
-                                   selector}': {e}")
-                    continue
+            # Extract navigation from JavaScript if present
+            js_links = self._extract_js_navigation(soup, url, base_domain, found_links)
+            navigation_links.extend(js_links)
 
             # Sort by navigation links first, then by text
             navigation_links.sort(key=lambda x: (
                 x['selector_type'] != 'navigation', x['text']))
 
-            logger.info(f"Found {len(navigation_links)
-                                 } potential navigation links from {url}")
+            logger.info(f"Found {len(navigation_links)} potential navigation links from {url}")
             return navigation_links
 
         except Exception as e:
             logger.error(f"Failed to extract navigation links from {url}: {e}")
             return []
+
+    def _extract_traditional_links(self, soup: BeautifulSoup, base_url: str, base_domain: str, found_links: set) -> List[Dict[str, str]]:
+        """Extract traditional <a href=""> navigation links."""
+        navigation_links = []
+        
+        # Look for navigation-specific elements first
+        nav_selectors = [
+            'nav a', 'header a', '.navigation a', '.nav a', '.menu a',
+            '.navbar a', '.main-nav a', '.primary-nav a', '.site-nav a',
+            '.header-nav a', '.top-nav a', '[role="navigation"] a'
+        ]
+
+        # Also look for content links that might be important pages
+        content_selectors = [
+            'main a', '.content a', '.main-content a', '.page-content a',
+            '.footer a', 'footer a', '.site-footer a'
+        ]
+
+        all_selectors = nav_selectors + content_selectors
+
+        for selector in all_selectors:
+            try:
+                links = soup.select(selector)
+                for link in links:
+                    href = link.get('href')
+                    if not href:
+                        continue
+
+                    # Convert relative URLs to absolute
+                    absolute_url = self._resolve_url(href, base_url)
+                    if not absolute_url or absolute_url in found_links:
+                        continue
+
+                    # Only include links from the same domain
+                    if not self._is_same_domain(absolute_url, base_domain):
+                        continue
+
+                    # Get link text and context
+                    link_text = link.get_text(strip=True)
+                    # Skip very long text
+                    if not link_text or len(link_text) > 100:
+                        continue
+
+                    # Skip common non-content links
+                    if self._should_skip_link(absolute_url, link_text):
+                        continue
+
+                    context = self._get_element_context(link)
+                    
+                    navigation_links.append({
+                        'text': link_text,
+                        'url': absolute_url,
+                        'description': context,
+                        'selector_type': 'navigation' if selector in nav_selectors else 'content'
+                    })
+                    found_links.add(absolute_url)
+
+            except Exception as e:
+                logger.warning(f"Error processing traditional selector '{selector}': {e}")
+                continue
+
+        return navigation_links
+
+    def _extract_modern_navigation(self, soup: BeautifulSoup, base_url: str, base_domain: str, found_links: set) -> List[Dict[str, str]]:
+        """Extract modern JavaScript-based navigation elements without href attributes."""
+        navigation_links = []
+        
+        # Modern navigation selectors for clickable elements
+        modern_nav_selectors = [
+            'nav div.nav-link', 'nav .nav-item div', 'nav .nav-item span',
+            'header div.nav-link', 'header .nav-item div', 'header .nav-item span',
+            '.navigation div[class*="nav"]', '.menu div[class*="nav"]',
+            '.navbar div[class*="nav"]', '.header-menu div[class*="nav"]',
+            '[class*="cursor-pointer"]', 'div[role="button"]',
+            'nav button', 'header button[class*="nav"]'
+        ]
+
+        for selector in modern_nav_selectors:
+            try:
+                elements = soup.select(selector)
+                for element in elements:
+                    # Skip if this element contains an <a> tag (already handled)
+                    if element.find('a'):
+                        continue
+                    
+                    # Get element text
+                    element_text = element.get_text(strip=True)
+                    if not element_text or len(element_text) > 100:
+                        continue
+
+                    # Skip non-navigation text
+                    if self._should_skip_navigation_text(element_text):
+                        continue
+
+                    # Try to extract URL from data attributes
+                    nav_url = self._extract_data_attributes(element, base_url)
+                    
+                    # If no data attribute URL, try to infer from text
+                    if not nav_url:
+                        nav_url = self._infer_url_from_text(element_text, base_url)
+
+                    if nav_url and nav_url not in found_links:
+                        # Only include links from the same domain
+                        if self._is_same_domain(nav_url, base_domain):
+                            context = self._get_element_context(element)
+                            
+                            navigation_links.append({
+                                'text': element_text,
+                                'url': nav_url,
+                                'description': context,
+                                'selector_type': 'navigation',
+                                'extraction_method': 'modern_navigation'
+                            })
+                            found_links.add(nav_url)
+
+            except Exception as e:
+                logger.warning(f"Error processing modern navigation selector '{selector}': {e}")
+                continue
+
+        return navigation_links
+
+    def _extract_js_navigation(self, soup: BeautifulSoup, base_url: str, base_domain: str, found_links: set) -> List[Dict[str, str]]:
+        """Extract navigation URLs from JavaScript code and data structures."""
+        navigation_links = []
+        
+        try:
+            # Look for script tags with navigation data
+            script_tags = soup.find_all('script')
+            
+            for script in script_tags:
+                script_content = script.string
+                if not script_content:
+                    continue
+
+                # Look for common navigation patterns in JavaScript
+                import re
+                
+                # Pattern for router configurations
+                route_patterns = [
+                    r'["\']([^"\']*(?:floor-plans|amenities|contact|tour|photos|neighborhood|pet)[^"\']*)["\']',
+                    r'path:\s*["\']([^"\']+)["\']',
+                    r'route:\s*["\']([^"\']+)["\']',
+                    r'href:\s*["\']([^"\']+)["\']'
+                ]
+                
+                for pattern in route_patterns:
+                    matches = re.findall(pattern, script_content, re.IGNORECASE)
+                    for match in matches:
+                        if match and match.startswith('/'):
+                            absolute_url = self._resolve_url(match, base_url)
+                            if (absolute_url and 
+                                absolute_url not in found_links and 
+                                self._is_same_domain(absolute_url, base_domain)):
+                                
+                                # Extract meaningful name from URL
+                                url_parts = match.strip('/').split('/')
+                                nav_text = url_parts[-1].replace('-', ' ').title() if url_parts else 'Page'
+                                
+                                navigation_links.append({
+                                    'text': nav_text,
+                                    'url': absolute_url,
+                                    'description': f'Found in JavaScript: {match}',
+                                    'selector_type': 'navigation',
+                                    'extraction_method': 'javascript'
+                                })
+                                found_links.add(absolute_url)
+
+        except Exception as e:
+            logger.warning(f"Error extracting JavaScript navigation: {e}")
+
+        return navigation_links
+
+    def _extract_data_attributes(self, element, base_url: str) -> Optional[str]:
+        """Extract navigation URL from element data attributes."""
+        data_attrs = ['data-url', 'data-href', 'data-target', 'data-route', 'data-link', 'data-path']
+        
+        for attr in data_attrs:
+            value = element.get(attr)
+            if value:
+                return self._resolve_url(value, base_url)
+        
+        return None
+
+    def _infer_url_from_text(self, text: str, base_url: str) -> Optional[str]:
+        """Infer likely URL from navigation text based on common patterns."""
+        if not text:
+            return None
+            
+        # Clean and normalize text
+        clean_text = text.lower().strip()
+        
+        # Common navigation text to URL mappings
+        url_mappings = {
+            'floor plans': '/floor-plans/',
+            'floorplans': '/floor-plans/',
+            'amenities': '/amenities/',
+            'contact': '/contact/',
+            'contact us': '/contact/',
+            'tour': '/tour/',
+            'virtual tour': '/tour/',
+            'schedule tour': '/tour/',
+            'photos': '/photos/',
+            'gallery': '/photos/',
+            'neighborhood': '/neighborhood/',
+            'location': '/location/',
+            'pet friendly': '/pet-friendly/',
+            'pets': '/pet-friendly/',
+            'pet policy': '/pet-friendly/',
+            'apply': '/apply/',
+            'application': '/apply/',
+            'residents': '/residents/',
+            'resident portal': '/residents/',
+            'about': '/about/',
+            'specials': '/specials/',
+            'pricing': '/pricing/',
+            'availability': '/availability/'
+        }
+        
+        # Check direct mappings first
+        if clean_text in url_mappings:
+            return self._resolve_url(url_mappings[clean_text], base_url)
+        
+        # Try partial matches
+        for key, url_path in url_mappings.items():
+            if key in clean_text:
+                return self._resolve_url(url_path, base_url)
+        
+        # Fallback: convert text to URL-like format
+        url_text = clean_text.replace(' ', '-').replace('_', '-')
+        # Remove special characters except hyphens
+        import re
+        url_text = re.sub(r'[^a-z0-9-]', '', url_text)
+        
+        if url_text and len(url_text) > 2:
+            return self._resolve_url(f'/{url_text}/', base_url)
+        
+        return None
+
+    def _should_skip_navigation_text(self, text: str) -> bool:
+        """Check if navigation text should be skipped."""
+        if not text:
+            return True
+            
+        skip_patterns = [
+            'share on', 'facebook', 'twitter', 'linkedin', 'copy link',
+            'sign in', 'login', 'logout', 'register', 'privacy', 'terms',
+            'cookies', 'sitemap', 'search', 'menu', 'toggle', 'close',
+            'skip to', 'accessibility'
+        ]
+        
+        text_lower = text.lower()
+        return any(pattern in text_lower for pattern in skip_patterns)
+
+    def _should_skip_link(self, url: str, text: str) -> bool:
+        """Check if a link should be skipped based on URL and text patterns."""
+        skip_patterns = [
+            'javascript:', 'mailto:', 'tel:', '#',
+            'login', 'sign in', 'register', 'logout',
+            'privacy', 'terms', 'cookies', 'sitemap'
+        ]
+
+        return any(pattern in url.lower() or pattern in text.lower() for pattern in skip_patterns)
+
+    def _get_element_context(self, element) -> str:
+        """Get contextual information from an element's parent."""
+        context = ''
+        parent = element.parent
+        if parent:
+            context = parent.get_text(strip=True)
+            # Limit context length
+            if len(context) > 200:
+                context = context[:200] + '...'
+        return context
 
     def _get_base_domain(self, url: str) -> str:
         """Extract base domain from URL."""
