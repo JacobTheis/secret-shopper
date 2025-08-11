@@ -6,27 +6,20 @@ This package provides AI-powered agents for:
 - Email conversation generation and analysis
 
 Usage:
-    from utils.ai_integration.service import (
-        create_persona_generation_service,
-        create_conversation_service
+    from utils.ai_integration.agents import (
+        PersonaGenerationAgent,
+        ConversationAgent,
+        FloorPlanSpecialistAgent
     )
     
-    # Create services
-    persona_service = create_persona_generation_service()
-    email_service = create_conversation_service('initial')
+    # Create agents
+    persona_agent = PersonaGenerationAgent()
+    email_agent = ConversationAgent('conversation_initial')
     
-    # Use services
-    persona = await persona_service.run("Generate a young professional persona")
-    email = await email_service.run("Write an inquiry email")
+    # Use agents
+    persona = await persona_agent.generate_persona()
+    email = await email_agent.generate_initial_inquiry(persona, community_info)
 """
-
-from .service import (
-    create_persona_generation_service,
-    create_conversation_service,
-    MultiProviderAIService,
-    AIServiceError,
-    AIServiceUnavailableError
-)
 
 from .schemas import (
     CommunityInformation,
@@ -36,23 +29,41 @@ from .schemas import (
     FloorPlan,
     CommunityPage,
     FloorPlanAmenity,
-    CommunityAmenity
+    CommunityAmenity,
+    FloorPlanExtractionResult,
+    CommunityOverviewExtractionResult,
+    FeeExtractionResult,
+    ValidationReport,
+    OrchestrationResult
+)
+
+from .agents import (
+    PersonaGenerationAgent,
+    ConversationAgent,
+    FloorPlanSpecialistAgent,
+    CommunityOverviewAgent,
+    FeeSpecialistAgent,
+    ValidationAgent,
+    MasterOrchestratorAgent
 )
 
 from .agent_config import (
     AgentConfig,
     get_agent_config,
     get_model_for_agent,
+    get_model_settings_for_agent,
     RETRY_CONFIG
 )
 
 __all__ = [
-    # Service layer
-    'create_persona_generation_service',
-    'create_conversation_service',
-    'MultiProviderAIService',
-    'AIServiceError',
-    'AIServiceUnavailableError',
+    # Agents
+    'PersonaGenerationAgent',
+    'ConversationAgent',
+    'FloorPlanSpecialistAgent',
+    'CommunityOverviewAgent', 
+    'FeeSpecialistAgent',
+    'ValidationAgent',
+    'MasterOrchestratorAgent',
     
     # Schemas
     'CommunityInformation',
@@ -63,10 +74,16 @@ __all__ = [
     'CommunityPage',
     'FloorPlanAmenity',
     'CommunityAmenity',
+    'FloorPlanExtractionResult',
+    'CommunityOverviewExtractionResult',
+    'FeeExtractionResult',
+    'ValidationReport',
+    'OrchestrationResult',
     
     # Configuration
     'AgentConfig',
     'get_agent_config',
     'get_model_for_agent',
+    'get_model_settings_for_agent',
     'RETRY_CONFIG',
 ]

@@ -15,7 +15,7 @@ from .models import (
     Fee,
 )
 from apps.targets.models import Target
-from utils.ai_integration.service import create_master_orchestrator_service
+from utils.ai_integration.agents import MasterOrchestratorAgent
 from utils.ai_integration.schemas import CommunityInformation
 from utils.ai_integration.agent_config import RETRY_CONFIG
 
@@ -403,7 +403,7 @@ def start_information_gathering_task(self, shop_id: str) -> None:
         """Async function to run the multi-agent information gathering with orchestrator."""
         try:
             # Create the master orchestrator agent
-            orchestrator = create_master_orchestrator_service()
+            orchestrator = MasterOrchestratorAgent()
 
             logger.info(
                 f"Starting multi-agent orchestrated extraction for Shop ID: {

@@ -128,6 +128,51 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = "static/"
+
+# Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'openai._base_client': {
+            'handlers': ['console'],
+            'level': 'INFO',  # Changed from DEBUG to reduce response content
+            'propagate': False,
+        },
+        'httpx': {
+            'handlers': ['console'],
+            'level': 'WARNING',  # Only show warnings/errors, not full HTTP details
+            'propagate': False,
+        },
+        'pydantic_ai.models.openai': {
+            'handlers': ['console'],
+            'level': 'INFO',  # Changed from DEBUG to reduce response content
+            'propagate': False,
+        },
+        'utils.ai_integration': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
 # Define where Django should look for static files globally
 STATICFILES_DIRS = [
     BASE_DIR / "static",

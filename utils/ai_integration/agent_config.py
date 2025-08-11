@@ -71,52 +71,53 @@ class AgentConfig:
         if with_search:
             return OpenAIResponsesModelSettings(
                 openai_builtin_tools=[
-                    WebSearchToolParam(type='web_search_preview', search_context_size='high')]
+                    WebSearchToolParam(type='web_search_preview')],
+                openai_tool_choice="auto"
             )
-        return None
+
+        # Force auto tool choice for all agents to prevent tool choice conflicts
+        return OpenAIResponsesModelSettings(
+            openai_tool_choice="auto"
+        )
 
 
-# Agent-specific configurations with multi-provider support
+# Agent-specific configurations
 AGENT_CONFIGS = {
     'persona_generation': {
-        'primary_service': 'openai',
-        'fallback_service': 'anthropic',
-        'openai_model': 'gpt-4.1-mini',
-        'anthropic_model': 'claude-3-5-haiku-20241022',
+        'service': 'openai',
+        'model': 'gpt-4.1-mini',
         'temperature': 0.8,
+        'thinking': False,
         'system_prompt': """You are an expert at creating realistic personas for secret shopping scenarios.
         Generate detailed, believable personas with specific backgrounds, preferences, and communication styles
         that would be appropriate for apartment hunting scenarios."""
     },
 
     'conversation_initial': {
-        'primary_service': 'openai',
-        'fallback_service': 'anthropic',
-        'openai_model': 'gpt-4.1-mini',
-        'anthropic_model': 'claude-3-5-haiku-20241022',
+        'service': 'openai',
+        'model': 'gpt-4.1-mini',
         'temperature': 0.7,
+        'thinking': False,
         'system_prompt': """You are roleplaying as a potential tenant looking for an apartment.
         Write natural, engaging initial inquiry emails that reflect your persona's communication style,
         interests, and housing needs. Be authentic and specific in your questions."""
     },
 
     'conversation_followup': {
-        'primary_service': 'anthropic',
-        'fallback_service': 'openai',
-        'openai_model': 'gpt-4.1-mini',
-        'anthropic_model': 'claude-3-5-haiku-20241022',
+        'service': 'anthropic',
+        'model': 'claude-3-5-haiku-20241022',
         'temperature': 0.7,
+        'thinking': False,
         'system_prompt': """You are following up on a previous apartment inquiry as your persona.
         Write polite, natural follow-up emails that address any missing information while maintaining
         your character's voice and style. Show continued interest while being specific about your needs."""
     },
 
     'conversation_analysis': {
-        'primary_service': 'openai',
-        'fallback_service': 'anthropic',
-        'openai_model': 'gpt-4.1-mini',
-        'anthropic_model': 'claude-3-5-haiku-20241022',
+        'service': 'openai',
+        'model': 'gpt-4.1-mini',
         'temperature': 0.1,
+        'thinking': False,
         'system_prompt': """You are analyzing property agent responses for secret shopping purposes.
         Extract key information, evaluate responsiveness and professionalism, and identify what
         information is still missing. Be objective and thorough in your analysis."""
@@ -124,20 +125,19 @@ AGENT_CONFIGS = {
 
     # Multi-Agent Information Gathering Agents
     'floor_plan_specialist': {
-        'primary_service': 'openai',
-        'fallback_service': 'anthropic',
-        'openai_model': 'gpt-4.1',
-        'anthropic_model': 'claude-sonnet-4-20250514',
+        'service': 'openai',
+        'model': 'gpt-4.1',
         'temperature': 0.3,
         'with_search': False,
+        'thinking': True,
         'system_prompt': """You are a floor plan extraction specialist. Your ONLY job is to analyze the single specific URL assigned to you by the Master Orchestrator and extract ALL floor plans from that content.
-        
+
         CRITICAL RESTRICTIONS:
         - You receive a SINGLE specific URL from the orchestrator
         - Scrape ONLY that URL - do NOT navigate to other pages
         - Do NOT make autonomous decisions about additional URLs to scrape
         - The orchestrator controls all scraping decisions
-        
+
         For each floor plan you find in the content from your assigned URL, extract COMPLETE information:
         - Exact name/model name
         - Bedrooms and bathrooms (be precise with decimals)
@@ -148,18 +148,18 @@ AGENT_CONFIGS = {
         - Available units count (look for "X available", "X units available", "X remaining", availability numbers, unit counts)
         - ALL amenities specific to that floor plan (from visible content only)
         - Do NOT generate or assume URLs - only use what's explicitly visible
-        
+
         Focus entirely on analyzing your single assigned URL - extract every floor plan detail available from that specific page.""",
         'prompts': {
             'extract_floor_plans': """
             MISSION: Extract ALL floor plans from the provided scraped website content.
-            
+
             IMPORTANT CONSTRAINTS:
             - Work ONLY with the content provided to you
             - Do NOT attempt to access other pages or follow links
             - Do NOT generate URLs or make assumptions about page structure
             - Extract only information that is explicitly visible in the provided content
-            
+
             EXTRACTION REQUIREMENTS:
             For each floor plan visible in the provided content, extract:
             - Exact model/unit name (as shown)
@@ -173,113 +173,113 @@ AGENT_CONFIGS = {
             - Number of available units (look for "X available", "X units", "X remaining", availability counts near floor plan names)
             - ALL specific amenities for that floor plan (only from visible text)
             - Do NOT include URL field unless explicitly visible in content
-            
+
             Focus on extracting complete information from what's available.
             If information is not visible in the provided content, mark it as unavailable rather than guessing.
-            
+
             You will be provided with scraped website content. Analyze this content thoroughly to extract all visible floor plan information.
             """
         }
     },
 
     'community_overview_agent': {
-        'primary_service': 'openai',
-        'fallback_service': 'anthropic',
-        'openai_model': 'gpt-4.1',
-        'anthropic_model': 'claude-3-5-haiku-20241022',
+        'service': 'openai',
+        'model': 'gpt-4.1',
         'temperature': 0.1,
-        'with_search': True,
-        'system_prompt': """You are a comprehensive community information extraction specialist. Your job is to discover ALL pages on the website and extract complete community information.
+        'with_search': False,
+        'thinking': False,
+        'system_prompt': """You are a targeted community information extraction specialist. Your job is to extract community information from the specific URL assigned to you by the Master Orchestrator.
 
-        COMPREHENSIVE EXTRACTION APPROACH:
-        1. ALWAYS start by using the discover_and_scrape_navigation tool to find ALL pages on the website
-        2. Create CommunityPage objects for EVERY discovered navigation link 
-        3. Use scrape_page_content tool for additional page content when needed
-        4. Extract complete community information from all available content
+        TARGETED EXTRACTION APPROACH:
+        1. You receive a SINGLE specific URL from the orchestrator
+        2. Scrape ONLY that URL using scrape_page_content tool
+        3. Extract ALL relevant community information from that page's content
+        4. Create a CommunityPage object for the URL you're processing
+        5. Do NOT attempt to discover or access additional URLs - the orchestrator handles that
 
         CRITICAL REQUIREMENTS:
-        - You MUST use discover_and_scrape_navigation tool first to find all pages
-        - Create a CommunityPage object for EVERY navigation link discovered
-        - Include main homepage as a community page 
-        - Ensure comprehensive page tracking - this is your primary responsibility
+        - You receive a SINGLE specific URL from the orchestrator  
+        - Scrape ONLY that URL - do NOT navigate to other pages
+        - Do NOT make autonomous decisions about additional URLs to scrape
+        - The orchestrator controls all URL delegation decisions
 
-        Extract comprehensive information:
-        1. Community overview and description (from main page content)
-        2. Contact information and office hours (from any page)
-        3. Address and location details (from any page)
-        4. Community amenities (from amenities/main pages)
-        5. Special offers and promotions (from any page)
-        6. Policies (pet policy, lease terms from any page)
-        7. Resident portal information (from any page)
-        8. Any fees mentioned across all pages
-        9. COMMUNITY PAGES: Create detailed CommunityPage objects for every discovered navigation link
+        Extract comprehensive information from your assigned URL:
+        1. Community overview and description (if available on this page)
+        2. Contact information and office hours (if available on this page)
+        3. Address and location details (if available on this page)
+        4. Community amenities (if available on this page)
+        5. Special offers and promotions (if available on this page)
+        6. Policies (pet policy, lease terms if available on this page)
+        7. Resident portal information (if available on this page)
+        8. Any fees mentioned on this page
+        9. Create a CommunityPage object for your assigned URL
 
-        COMMUNITY PAGES PRIORITY:
-        Your primary mission is ensuring ALL discovered pages make it into the final result. 
-        Even if a page has limited content, create a CommunityPage object for it using the navigation information.""",
+        Focus entirely on analyzing your single assigned URL - extract every piece of community information available from that specific page.""",
         'prompts': {
             'extract_community_info': """
-            COMPREHENSIVE COMMUNITY EXTRACTION MISSION: Discover ALL pages and extract complete community information.
+            TARGETED COMMUNITY EXTRACTION MISSION: Extract community information from your assigned URL.
 
-            MANDATORY FIRST STEP: DISCOVER ALL PAGES
-            1. Use discover_and_scrape_navigation tool with the website URL to find ALL navigation pages
-            2. This tool will provide a categorized report of all discovered pages
-            3. Use scrape_page_content tool for key pages if additional content is needed
+            SINGLE URL FOCUS:
+            1. Use scrape_page_content tool to get content from your assigned URL
+            2. Extract ALL relevant community information from that page content
+            3. Create a CommunityPage object for the URL you're processing
+            4. Do NOT attempt to discover or scrape additional URLs
 
             EXTRACTION REQUIREMENTS:
-            
-            FOCUS AREAS:
-            1. COMMUNITY OVERVIEW: Name, description, target market, website quality
-            2. FEES: Application fee, admin fee, membership/amenity package fee, pet fees, security deposits
-            3. POLICIES: Pet policy, lease terms, resident requirements
-            4. CONTACT: Office hours, phone, email, address (street, city, state, zip)
-            5. AMENITIES: Community-wide amenities (pool, gym, clubhouse, etc.)
-            6. SPECIAL OFFERS: Current promotions, move-in specials
-            7. PORTAL: Resident portal provider/software
-            8. **COMMUNITY PAGES**: Create CommunityPage objects for EVERY navigation link discovered
 
-            CRITICAL COMMUNITY PAGES REQUIREMENT:
-            For EVERY navigation link discovered by the discover_and_scrape_navigation tool:
-            - Create a CommunityPage object with exact navigation text as name
-            - Use the exact URL from the navigation discovery
-            - Create descriptive overview based on page purpose and any available content
-            - Include ALL categories: floor plans, amenities, contact, gallery, and other pages
-            
+            FOCUS AREAS (extract only what's available on your assigned page):
+            1. COMMUNITY OVERVIEW: Name, description, target market information
+            2. FEES: Any fees mentioned on this page (application, admin, membership, pet fees, deposits)
+            3. POLICIES: Any policies mentioned (pet policy, lease terms, requirements)
+            4. CONTACT: Office hours, phone, email, address information
+            5. AMENITIES: Any community amenities mentioned on this page
+            6. SPECIAL OFFERS: Any promotions or specials mentioned
+            7. PORTAL: Resident portal information if mentioned
+            8. **COMMUNITY PAGE**: Create a CommunityPage object for your assigned URL
+
+            COMMUNITY PAGE REQUIREMENT:
+            Create a CommunityPage object for the URL you're processing:
+            - Use a descriptive name based on the page content and URL
+            - Use the exact URL you were assigned to process
+            - Create a descriptive overview based on the page content and purpose
+            - Include any relevant information found on this specific page
+
             COMMUNITY PAGE EXAMPLES:
-            - "Floor Plans" page → CommunityPage(name="Floor Plans", url="...", overview="Floor plan listings and layouts page")
-            - "Amenities" page → CommunityPage(name="Amenities", url="...", overview="Community amenities and facilities information")
-            - "Pet Friendly" page → CommunityPage(name="Pet Friendly", url="...", overview="Pet policy and pet-related information page")
-            - "Contact" page → CommunityPage(name="Contact", url="...", overview="Contact information and office details page")
-            
+            - Amenities page → CommunityPage(name="Community Amenities", url="...", overview="Information about community facilities and amenities")
+            - Contact page → CommunityPage(name="Contact Information", url="...", overview="Office hours, contact details, and location information")
+            - Main page → CommunityPage(name="Homepage", url="...", overview="Main community information and overview")
+
             SUCCESS CRITERIA:
-            - ALL discovered navigation links are converted to CommunityPage objects
-            - No discovered pages are lost or omitted from the final result
-            - Each CommunityPage has meaningful name, URL, and overview
-            
-            This ensures comprehensive page tracking and prevents loss of discovered navigation links.
+            - Extract all relevant community information from your assigned URL
+            - Create a meaningful CommunityPage object for the URL you processed
+            - Focus on content analysis rather than navigation discovery
             """
         }
     },
 
     'fee_specialist': {
-        'primary_service': 'openai',
-        'fallback_service': 'anthropic',
-        'openai_model': 'gpt-4.1',
-        'anthropic_model': 'claude-3-5-haiku-20241022',
-        'temperature': 0.2,
+        'service': 'openai',
+        'model': 'gpt-4.1',
+        'temperature': 0.5,
         'with_search': True,
-        'system_prompt': """You are a comprehensive fee extraction specialist with web search capabilities. Your mission is to find ALL fees and pricing information for rental communities using both web scraping and web search.
+        'thinking': False,
+        'system_prompt': """You are a comprehensive fee extraction specialist. Your mission is to find ALL fees and pricing information for rental communities using web scraping for the main domain and web search for broader information.
 
         EXTRACTION APPROACH:
-        1. FIRST: Use the scrape_page_content tool to analyze the assigned URL
-        2. THEN: Use web search to find additional fee information that may not be visible on the main page
+        1. FIRST: Use the scrape_page_content tool to analyze the assigned URL (main domain only)
+        2. THEN: Use web search tools to find additional fee information from across the web
         3. COMBINE: Merge all fee information from both sources for comprehensive results
+
+        TOOL USAGE RULES:
+        - Use scrape_page_content ONLY for URLs on the main domain (same domain as the assigned URL)
+        - Use web search tools for finding information across the wider web
+        - Do NOT use web scraper to crawl external sites or domains
 
         WEB SEARCH STRATEGY:
         - Search for site-specific fee information (e.g., "site:anker-haus.com fees application pet deposit")
         - Look for pricing pages, application processes, pet policies, amenity fees
         - Search for community name + "fees" or "pricing" or "application"
-        - Find fee schedules, rate sheets, or pricing documents
+        - Find fee schedules, rate sheets, or pricing documents from review sites or listings
 
         For each fee you find from ANY source, extract COMPLETE information:
         - Exact fee name and description (as shown)
@@ -289,22 +289,24 @@ AGENT_CONFIGS = {
         - Whether it's one-time, monthly, or conditional (if specified)
         - Any conditions or requirements for the fee
         - Fee category (application, pet, amenity, etc.)
-        - Source (scraped page or web search results)
+        - Source (main domain scrape or web search results)
 
-        MANDATORY: You MUST use web search in addition to page scraping to ensure comprehensive fee discovery. Many fees are hidden on separate pages or documents not linked from the main page.""",
+        MANDATORY: You MUST use web search in addition to main domain scraping to ensure comprehensive fee discovery. Many fees are discussed on external sites, reviews, or listings not available on the main domain.""",
         'prompts': {
             'extract_fees': """
-            COMPREHENSIVE FEE EXTRACTION MISSION: Use BOTH web scraping AND web search to find ALL fees for this rental community.
+            COMPREHENSIVE FEE EXTRACTION MISSION: Use BOTH main domain web scraping AND web search to find ALL fees for this rental community.
 
             MANDATORY TWO-STEP PROCESS:
-            
-            STEP 1: SCRAPE THE PROVIDED URL
+
+            STEP 1: SCRAPE THE PROVIDED URL (MAIN DOMAIN ONLY)
             - Use scrape_page_content tool to get initial fee information from the assigned URL
-            - Look for any visible fees, deposits, or charges on the main page
+            - ONLY scrape URLs on the same domain as the assigned URL
+            - Look for any visible fees, deposits, or charges on the main domain pages
             - Note what fees you find and what might be missing
-            
+
             STEP 2: WEB SEARCH FOR COMPREHENSIVE FEE DISCOVERY (REQUIRED)
-            - Use web search to find additional fee information not visible on the main page
+            - Use web search tools to find additional fee information from across the web
+            - Search for information on review sites, listing platforms, and external sources
             - Search queries to try:
               * "site:[domain] fees application pet deposit amenity"
               * "[community name] pricing fees application"
@@ -312,7 +314,8 @@ AGENT_CONFIGS = {
               * "[community name] move-in costs deposit"
               * "[community name] resident benefits package fee"
               * "[community name] amenity fee parking"
-            
+              * "[community name] reviews fees deposits"
+
             EXTRACTION REQUIREMENTS:
             For each fee found from EITHER source, extract:
             - Exact fee name/title (as shown)
@@ -320,9 +323,9 @@ AGENT_CONFIGS = {
             - Description of what the fee covers
             - Whether the fee is refundable (if stated)
             - Frequency (one-time, monthly, annual, conditional)
-            - Source where found ("Main Page Scrape" or "Web Search Results")
+            - Source where found ("Main Domain Scrape" or "Web Search Results")
             - Any conditions that apply to the fee
-            
+
             TARGET FEE TYPES TO SEARCH FOR:
             - Application fees ($50-$150 typical)
             - Administration/Administrative fees ($100-$300 typical)
@@ -339,46 +342,45 @@ AGENT_CONFIGS = {
             - Storage fees
             - Early termination fees
             - Any other charges residents might pay
-            
-            CRITICAL: You MUST perform web search even if you find some fees on the main page. Most rental communities have additional fees not visible on the main floor plan page.
+
+            CRITICAL: You MUST perform web search even if you find some fees on the main domain. Many rental communities have additional fees discussed on external sites, reviews, or listing platforms not available on the main domain.
             """
         }
     },
 
     'validation_agent': {
-        'primary_service': 'openai',
-        'fallback_service': 'anthropic',
-        'openai_model': 'gpt-4.1-mini',
-        'anthropic_model': 'claude-3-5-haiku-20241022',
+        'service': 'openai',
+        'model': 'gpt-4.1-mini',
         'temperature': 0.0,
+        'thinking': False,
         'system_prompt': """You are a data validation specialist. Your job is to analyze extracted community information and identify what's missing or incomplete.
-        
+
         You are extremely thorough and critical. You check for:
         1. Missing critical information (required fields)
         2. Incomplete data (partial prices, vague policies)
         3. Logical inconsistencies
         4. Information that seems too generic or placeholder-like
-        
+
         You provide specific, actionable feedback about what needs to be re-extracted and where to look for it.""",
         'prompts': {
             'validate_extraction': """
             VALIDATION MISSION: Analyze this extracted community data and identify gaps/issues.
-            
+
             COMMUNITY DATA TO VALIDATE:
             {extracted_data}
-            
+
             VALIDATION CHECKLIST:
-            
+
             CRITICAL FIELDS (MUST be present):
             - Community name and overview
             - At least 1 floor plan with complete details
             - Contact information (office hours preferred, but not address if available at target level)
             - At least 1 fee amount (application, admin, or membership)
-            
+
             ADDRESS FIELDS POLICY:
             - Address fields (street_address, city, state, zip_code) are NOT critical if they exist at the target level
             - Only flag address fields as missing if they're not available in the target data AND not found in community data
-            
+
             COMPLETENESS CHECK:
             - Are floor plan MINIMUM prices provided when available? (Required if pricing is shown)
             - Are floor plan MAXIMUM prices provided when available? (Nice to have, NOT critical)
@@ -386,14 +388,14 @@ AGENT_CONFIGS = {
             - Are specific amenities listed (not just generic ones)?
             - Are policy details specific (not vague statements)?
             - Are fee amounts exact dollar figures when provided?
-            
+
             IMPORTANT: Missing max_rental_price values should NOT be considered critical failures or trigger retries. They are nice-to-have enhancements only.
-            
+
             QUALITY CHECK:
             - Does information seem realistic and specific?
             - Are there obvious placeholder or template values?
             - Do the details match what you'd expect for this type of community?
-            
+
             PROVIDE SPECIFIC FEEDBACK:
             - What specific information is missing?
             - Which fields need more detail?
@@ -404,37 +406,41 @@ AGENT_CONFIGS = {
     },
 
     'master_orchestrator': {
-        'primary_service': 'openai',
-        'fallback_service': 'anthropic',
-        'openai_model': 'gpt-4.1',
-        'anthropic_model': 'claude-3-5-sonnet-20241022',
+        'service': 'openai',
+        'model': 'gpt-4.1',
         'temperature': 0.2,
+        'thinking': True,
         'system_prompt': """You are the Master Orchestrator for multi-agent information extraction. You coordinate specialized agents using intelligent URL delegation.
-        
+
         Your responsibilities:
         1. Discover website navigation structure first
         2. Intelligently delegate specific URLs to appropriate specialist agents
         3. Analyze results and determine if additional URLs need to be processed
         4. Merge results from multiple agents intelligently
         5. Make final decisions on data completeness
-        
+
         IMPORTANT: You control all scraping decisions. Agents only analyze the specific URLs you assign to them.""",
         'prompts': {
             'orchestrate_extraction': """
             ORCHESTRATION MISSION: Extract complete information from: {website_url}
-            
+
             AVAILABLE TOOLS:
             1. discover_navigation - Analyzes website structure and categorizes navigation URLs
-            2. extract_floor_plans_from_url - Extracts floor plans from a specific URL (accepts current_community_data)
-            3. extract_community_overview_from_url - Extracts community info from a specific URL (accepts current_community_data)
-            4. extract_fees_from_url - Extracts fees from a specific URL (accepts current_community_data)
+            2. extract_floor_plans_from_url - Extracts floor plans from a specific URL (accepts current_community_data, force_rescrape)
+            3. extract_community_overview_from_url - Extracts community info from a specific URL (accepts current_community_data, force_rescrape)
+            4. extract_fees_from_url - Extracts fees from a specific URL (accepts current_community_data, force_rescrape)
             5. merge_community_data - Merges new data with existing accumulated data
             6. validate_extraction_data - Validates completeness and identifies gaps (accepts previous_validation_score)
-            
+
             ORCHESTRATION STRATEGY WITH DATA ACCUMULATION:
             1. FIRST: Use discover_navigation tool to analyze the website structure and categorize URLs
             2. INITIALIZE: Start with empty community data: "{{}}"
-            3. ACCUMULATE DATA PROGRESSIVELY:
+            3. URL DEDUPLICATION RULES:
+               - Each URL should only be processed ONCE during initial extraction
+               - Do NOT set force_rescrape=True unless explicitly recommended by validation
+               - Tools automatically skip URLs that have already been processed
+               - Only re-scrape URLs when validation agent specifically recommends it
+            4. ACCUMULATE DATA PROGRESSIVELY:
                - For each URL, pass current accumulated data to extraction tools
                - Use merge_community_data tool after each extraction to combine results
                - NEVER lose previously extracted information
@@ -456,7 +462,7 @@ AGENT_CONFIGS = {
                - Always pass current accumulated data to prevent data loss
                - Continue building upon existing data rather than replacing it
                - STOP after 3 validation iterations regardless of minor missing data
-            
+
             DATA PRESERVATION RULES:
             - ACCUMULATE, DON'T REPLACE: Each tool call should ADD to existing data, never replace it
             - You MUST include every single floor plan found across ALL tool calls in your final result
@@ -467,7 +473,7 @@ AGENT_CONFIGS = {
             - USE MERGE TOOL: Always use merge_community_data after each extraction to preserve data
             - PASS ACCUMULATED DATA: Always pass current_community_data to extraction tools
             - NO DATA LOSS: Previous extractions must be preserved in subsequent operations
-            
+
             QUALITY STANDARDS AND COMPLETION CRITERIA:
             - Must have at least 80% completeness score from validation OR complete 3 validation iterations
             - Floor plans should include available information (min pricing required, max pricing nice-to-have)
@@ -476,25 +482,26 @@ AGENT_CONFIGS = {
             - ALL floor plans from specialist must be preserved
             - ACCEPTABLE COMPLETION: Stop after 3 validation iterations even if some non-critical data is missing
             - MISSING MAX RENT VALUES: Do not retry extractions solely for missing max_rental_price values
-            
+            - DO NOT INCLUDE 404 URLs
+
             Coordinate the agents strategically to achieve these standards.
             """,
             'retry_extraction': """
             RETRY MISSION: Based on validation feedback, re-extract missing information.
-            
+
             VALIDATION FEEDBACK:
             {validation_feedback}
-            
+
             CURRENT DATA:
             {current_data}
-            
+
             RETRY STRATEGY:
             Based on the validation feedback, decide which agents to use:
             - If floor plans are missing/incomplete → Use FloorPlanSpecialist
             - If fees are missing/incomplete → Use FeeSpecialist
             - If community info/policies are missing → Use CommunityOverviewAgent
             - If multiple areas need work → Use multiple agents strategically
-            
+
             Focus the retry efforts on the specific gaps identified by validation.
             """
         }
@@ -519,64 +526,40 @@ def get_agent_config(agent_type: str) -> Dict[str, Any]:
     return AGENT_CONFIGS[agent_type].copy()
 
 
-def get_model_for_agent(agent_type: str, prefer_fallback: bool = False) -> Model:
+def get_model_for_agent(agent_type: str) -> Model:
     """Get a configured model instance for a specific agent.
 
     Args:
         agent_type: The type of agent
-        prefer_fallback: Whether to use the fallback service instead of primary
 
     Returns:
         A PydanticAI Model instance
     """
     config = get_agent_config(agent_type)
-
-    if prefer_fallback and 'fallback_service' in config:
-        service = config['fallback_service']
-        model_name = config[f'{service}_model']
-    else:
-        service = config['primary_service']
-        model_name = config[f'{service}_model']
+    service = config['service']
+    model_name = config['model']
 
     return AgentConfig.get_model(service, model_name)
 
 
-def get_model_settings_for_agent(agent_type: str, prefer_fallback: bool = False) -> Optional[OpenAIResponsesModelSettings]:
+def get_model_settings_for_agent(agent_type: str) -> Optional[OpenAIResponsesModelSettings]:
     """Get model settings for a specific agent.
+    w 
 
     Args:
         agent_type: The type of agent
-        prefer_fallback: Whether to use the fallback service instead of primary
 
     Returns:
         OpenAIResponsesModelSettings if applicable, None otherwise
     """
     config = get_agent_config(agent_type)
-
-    if prefer_fallback and 'fallback_service' in config:
-        service = config['fallback_service']
-    else:
-        service = config['primary_service']
+    service = config['service']
 
     # Check if web search is enabled for this agent and service is OpenAI
     with_search = config.get(
         'with_search', False) and service.lower() == 'openai'
 
     return AgentConfig.get_model_settings(agent_type, with_search)
-
-
-def get_model_with_fallback(agent_type: str) -> tuple[Model, Model]:
-    """Get both primary and fallback models for an agent.
-
-    Args:
-        agent_type: The type of agent
-
-    Returns:
-        Tuple of (primary_model, fallback_model)
-    """
-    primary_model = get_model_for_agent(agent_type, prefer_fallback=False)
-    fallback_model = get_model_for_agent(agent_type, prefer_fallback=True)
-    return primary_model, fallback_model
 
 
 # Retry configuration

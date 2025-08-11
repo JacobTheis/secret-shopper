@@ -1,10 +1,10 @@
 """PydanticAI agents for secret shopping tasks."""
 
-import logging
-import time
-from typing import Dict, List, Optional
-from pydantic_ai import Agent
-
+from .agent_config import (
+    get_agent_config,
+    get_model_for_agent,
+    get_model_settings_for_agent,
+)
 from .schemas import (
     CommunityInformation,
     PersonaDetails,
@@ -16,14 +16,19 @@ from .schemas import (
     ValidationReport,
     OrchestrationResult,
 )
-from .agent_config import (
-    get_agent_config,
-    get_model_for_agent,
-    get_model_settings_for_agent,
-)
+import logging
+import time
+from typing import Dict, List, Optional
+from pydantic_ai import Agent
+import logfire
+
+# configure logfire
+logfire.configure(
+    token='pylf_v1_us_gygF7ympBKDqK5Lss1VbkPH9Vt8KCMR4jgCXMhwpmfD0')
+logfire.instrument_pydantic_ai()
+
 
 logger = logging.getLogger(__name__)
-
 
 
 class PersonaGenerationAgent:
@@ -411,170 +416,40 @@ class CommunityOverviewAgent:
                              url}: {str(e)}")
                 return f"Error scraping {url}: {str(e)}"
 
-        @self.agent.tool
-        async def discover_and_scrape_navigation(ctx, main_url: str) -> str:
-            """Discover all navigation links and create comprehensive page report.
-
-            This tool discovers all navigation and content links from the main
-            website, categorizes them, and provides detailed information for
-            creating CommunityPage objects.
-
-            Args:
-                main_url: The main website URL to analyze for navigation
-
-            Returns:
-                Detailed report of all discovered pages with their information
-            """
-            try:
-                logger.info(
-                    f"[CommunityOverviewAgent] Discovering navigation "
-                    f"from {main_url}")
-
-                scraper_context = "CommunityOverviewAgent"
-                async with DjangoWebScraper(
-                    max_retries=2, retry_delay=1.0,
-                    agent_context=scraper_context
-                ) as scraper:
-                    scraper.set_user_agent('chrome_mac')
-                    scraper.enhance_headers_for_site(main_url)
-
-                    # Extract all navigation links
-                    nav_links = await scraper.extract_navigation_links(main_url)
-
-                    logger.info(
-                        f"[CommunityOverviewAgent] Discovered "
-                        f"{len(nav_links)} navigation links")
-
-                    # Create comprehensive report
-                    report_parts = []
-                    report_parts.append(
-                        "=== NAVIGATION STRUCTURE DISCOVERED ===\n")
-                    report_parts.append(f"Main URL: {main_url}\n")
-                    report_parts.append(
-                        f"Total Pages Found: {len(nav_links)}\n\n")
-
-                    # Categorize links
-                    floor_plan_links = []
-                    amenity_links = []
-                    contact_links = []
-                    gallery_links = []
-                    other_links = []
-
-                    for link in nav_links:
-                        url_lower = link['url'].lower()
-                        text_lower = link['text'].lower()
-
-                        floor_keywords = [
-                            'floorplan', 'floor-plan', 'units',
-                            'layouts', 'apartment'
-                        ]
-                        amenity_keywords = [
-                            'amenities', 'amenity', 'pool', 'gym', 'clubhouse'
-                        ]
-                        contact_keywords = [
-                            'contact', 'office', 'hours', 'location'
-                        ]
-                        gallery_keywords = [
-                            'gallery', 'photos', 'images', 'virtual'
-                        ]
-
-                        if any(kw in url_lower or kw in text_lower
-                               for kw in floor_keywords):
-                            floor_plan_links.append(link)
-                        elif any(kw in url_lower or kw in text_lower
-                                 for kw in amenity_keywords):
-                            amenity_links.append(link)
-                        elif any(kw in url_lower or kw in text_lower
-                                 for kw in contact_keywords):
-                            contact_links.append(link)
-                        elif any(kw in url_lower or kw in text_lower
-                                 for kw in gallery_keywords):
-                            gallery_links.append(link)
-                        else:
-                            other_links.append(link)
-
-                    # Build detailed report for each category
-                    categories = [
-                        ("FLOOR PLAN PAGES", floor_plan_links),
-                        ("AMENITY PAGES", amenity_links),
-                        ("CONTACT/OFFICE PAGES", contact_links),
-                        ("GALLERY/PHOTO PAGES", gallery_links),
-                        ("OTHER COMMUNITY PAGES", other_links)
-                    ]
-
-                    for category_name, links in categories:
-                        if links:
-                            report_parts.append(f"=== {category_name} ===")
-                            for i, link in enumerate(links, 1):
-                                report_parts.append(
-                                    f"{i}. Page Name: {link['text']}")
-                                report_parts.append(f"   URL: {link['url']}")
-                                if link['description']:
-                                    report_parts.append(
-                                        f"   Context: {link['description']}")
-                                report_parts.append(
-                                    f"   Type: {link['selector_type']}")
-                                report_parts.append("")
-
-                    # Add instructions for creating community pages
-                    report_parts.append("=== INSTRUCTIONS ===")
-                    report_parts.append(
-                        "Create a CommunityPage object for EACH link above.")
-                    report_parts.append("Use the Page Name as the 'name' field.")
-                    report_parts.append("Use the URL as the 'url' field.")
-                    report_parts.append(
-                        "Create descriptive 'overview' based on the page name "
-                        "and context.")
-                    report_parts.append(
-                        "This ensures all discovered navigation pages are "
-                        "tracked in the final result.")
-
-                    final_report = "\n".join(report_parts)
-                    logger.info(
-                        f"[CommunityOverviewAgent] Generated navigation report "
-                        f"({len(final_report)} chars)")
-                    return final_report
-
-            except Exception as e:
-                logger.error(
-                    f"[CommunityOverviewAgent] Navigation discovery failed "
-                    f"for {main_url}: {str(e)}")
-                return f"Navigation discovery failed for {main_url}: {str(e)}"
 
     async def extract_community_info(
         self, website_url: str
     ) -> CommunityOverviewExtractionResult:
-        """Extract general community information from a website using comprehensive multi-page content.
+        """Extract community information from a specific URL assigned by the orchestrator.
 
         Args:
-            website_url: The URL of the community website to analyze
+            website_url: The specific URL to analyze for community information
 
         Returns:
-            CommunityOverviewExtractionResult with extracted community data
+            CommunityOverviewExtractionResult with extracted community data from the assigned URL
 
         Raises:
             Exception: If the extraction fails
         """
         try:
             prompt = f"""
-            COMPREHENSIVE COMMUNITY EXTRACTION for: {website_url}
+            TARGETED COMMUNITY EXTRACTION for assigned URL: {website_url}
 
-            MANDATORY STEPS:
-            1. Use discover_and_scrape_navigation tool with "{website_url}" to find ALL pages
-            2. Create CommunityPage objects for EVERY discovered navigation link
-            3. Use scrape_page_content tool for key pages if more content is needed
-            4. Extract complete community information following your system prompt
+            SINGLE URL PROCESSING:
+            1. Use scrape_page_content tool to get content from "{website_url}"
+            2. Extract ALL relevant community information from that page content
+            3. Create a CommunityPage object for the URL you're processing
+            4. Focus on comprehensive content analysis of your assigned URL
 
-            CRITICAL: Your primary responsibility is ensuring ALL discovered navigation pages 
-            make it into the community_pages field of your result. This includes floor plan pages,
-            amenities pages, contact pages, gallery pages, and any other navigation links found.
-
-            Start with navigation discovery, then proceed with comprehensive extraction.
+            CRITICAL: Extract all available community information from your assigned URL.
+            Create a meaningful CommunityPage object for the URL you processed.
+            
+            Analyze the content thoroughly and extract every relevant piece of community information.
             """
 
             result = await self.agent.run(prompt)
             logger.info(
-                f"Community overview agent successfully analyzed {website_url} with navigation discovery")
+                f"Community overview agent successfully analyzed assigned URL {website_url}")
             return result.data
 
         except Exception as e:
@@ -708,64 +583,69 @@ class ValidationAgent:
             import json
             # Convert community data to dict for validation
             extracted_data_str = community_data.model_dump_json(indent=2)
-            
+
             # Include target data context in validation prompt
             target_context = ""
             if target_data:
-                target_context = f"\n\nEXISTING TARGET DATA (fields already available at target level):\n{json.dumps(target_data, indent=2)}\n\nIMPORTANT: Do NOT flag address fields (street_address, city, state, zip_code) as missing or critical if they are already present in the target data above."
-            
+                target_context = f"\n\nEXISTING TARGET DATA (fields already available at target level):\n{json.dumps(
+                    target_data, indent=2)}\n\nIMPORTANT: Do NOT flag address fields (street_address, city, state, zip_code) as missing or critical if they are already present in the target data above."
+
             prompt = self.config["prompts"]["validate_extraction"].format(
                 extracted_data=extracted_data_str
             ) + target_context
 
             result = await self.agent.run(prompt)
-            
+
             # Log detailed validation results
             validation_report = result.data
             logger.info(
                 f"[ValidationAgent] Validation completed with {
                     validation_report.completeness_score}% completeness score"
             )
-            
+
             # Log critical missing fields
             if validation_report.critical_fields_missing:
                 logger.warning(
-                    f"[ValidationAgent] CRITICAL FIELDS MISSING: {', '.join(validation_report.critical_fields_missing)}"
+                    f"[ValidationAgent] CRITICAL FIELDS MISSING: {
+                        ', '.join(validation_report.critical_fields_missing)}"
                 )
-            
+
             # Log incomplete fields
             if validation_report.incomplete_fields:
                 logger.warning(
-                    f"[ValidationAgent] INCOMPLETE FIELDS: {', '.join(validation_report.incomplete_fields)}"
+                    f"[ValidationAgent] INCOMPLETE FIELDS: {
+                        ', '.join(validation_report.incomplete_fields)}"
                 )
-            
+
             # Log quality issues
             if validation_report.quality_issues:
                 logger.warning(
-                    f"[ValidationAgent] QUALITY ISSUES: {'; '.join(validation_report.quality_issues)}"
+                    f"[ValidationAgent] QUALITY ISSUES: {
+                        '; '.join(validation_report.quality_issues)}"
                 )
-            
+
             # Log specific feedback for improvements
             if validation_report.specific_feedback:
                 logger.info("[ValidationAgent] SPECIFIC FEEDBACK:")
                 for i, feedback in enumerate(validation_report.specific_feedback, 1):
                     logger.info(f"  {i}. {feedback}")
-            
+
             # Log retry recommendations
             if validation_report.retry_recommendations:
                 logger.info("[ValidationAgent] RETRY RECOMMENDATIONS:")
                 for i, recommendation in enumerate(validation_report.retry_recommendations, 1):
                     logger.info(f"  {i}. {recommendation}")
-            
+
             # Log validation summary
-            logger.info(f"[ValidationAgent] VALIDATION SUMMARY: {validation_report.validation_summary}")
-            
+            logger.info(f"[ValidationAgent] VALIDATION SUMMARY: {
+                        validation_report.validation_summary}")
+
             # Log validation status
             if validation_report.validation_passed:
                 logger.info("[ValidationAgent] ✅ VALIDATION PASSED")
             else:
                 logger.warning("[ValidationAgent] ❌ VALIDATION FAILED")
-            
+
             return validation_report
 
         except Exception as e:
@@ -780,6 +660,10 @@ class MasterOrchestratorAgent:
         """Initialize the master orchestrator agent."""
         self.config = get_agent_config("master_orchestrator")
         self.model = get_model_for_agent("master_orchestrator")
+        self.model_settings = get_model_settings_for_agent("master_orchestrator")
+
+        # Track processed URLs to prevent duplicate scraping
+        self.processed_urls = set()
 
         # Initialize specialized agents
         self.floor_plan_specialist = FloorPlanSpecialistAgent()
@@ -792,6 +676,7 @@ class MasterOrchestratorAgent:
             model=self.model,
             result_type=CommunityInformation,
             system_prompt=self.config["system_prompt"],
+            model_settings=self.model_settings,
         )
 
         # Add agent tools using the decorator pattern
@@ -873,7 +758,7 @@ class MasterOrchestratorAgent:
                 }
 
         @self.agent.tool
-        async def extract_floor_plans_from_url(ctx, specific_url: str, current_community_data: str = "{}") -> CommunityInformation:
+        async def extract_floor_plans_from_url(ctx, specific_url: str, current_community_data: str = "{}", force_rescrape: bool = False) -> CommunityInformation:
             """Extract floor plans from a specific URL and merge with existing data.
 
             This tool analyzes a single specific URL that contains floor plan information
@@ -882,35 +767,51 @@ class MasterOrchestratorAgent:
             Args:
                 specific_url: The specific URL to analyze for floor plans
                 current_community_data: JSON string of current accumulated community data
+                force_rescrape: Whether to bypass URL deduplication (for validation-driven retries)
 
             Returns:
-                FloorPlanExtractionResult with extracted floor plans (incremental)
+                CommunityInformation with extracted floor plans (incremental)
             """
+            # Check for duplicate URL unless forced by validation
+            if not force_rescrape and specific_url in self.processed_urls:
+                logger.info(f"[MasterOrchestratorAgent] Tool: Skipping already processed URL: {specific_url}")
+                # Return empty community data structure to maintain tool contract
+                return CommunityInformation(
+                    name="", overview="", url=specific_url,
+                    fees=[], floor_plans=[], community_amenities=[], community_pages=[]
+                )
+
             logger.info(f"[MasterOrchestratorAgent] Tool: Starting floor plan extraction for delegated URL: {
                         specific_url}")
             result = await self.floor_plan_specialist.extract_floor_plans(specific_url)
+            
+            # Mark URL as processed
+            self.processed_urls.add(specific_url)
+            logger.info(f"[MasterOrchestratorAgent] Tool: Marked URL as processed: {specific_url}")
+            
             logger.info(
                 f"[MasterOrchestratorAgent] Tool: Floor plan extraction completed, found {
                     len(result.floor_plans_found)} floor plans"
             )
-            
+
             # Convert extraction result to CommunityInformation format for merging
             community_data = CommunityInformation(
                 name="",  # Will be filled by community overview
-                overview="",  # Will be filled by community overview  
+                overview="",  # Will be filled by community overview
                 url=specific_url,
                 floor_plans=result.floor_plans_found,
                 fees=[],
                 community_amenities=[],
                 community_pages=[]
             )
-            
-            logger.info(f"[MasterOrchestratorAgent] Tool: Converted to community format with {len(community_data.floor_plans)} floor plans")
+
+            logger.info(f"[MasterOrchestratorAgent] Tool: Converted to community format with {
+                        len(community_data.floor_plans)} floor plans")
             return community_data
 
         @self.agent.tool
         async def extract_community_overview_from_url(
-            ctx, specific_url: str, current_community_data: str = "{}"
+            ctx, specific_url: str, current_community_data: str = "{}", force_rescrape: bool = False
         ) -> CommunityInformation:
             """Extract community information from a specific URL and merge with existing data.
 
@@ -920,24 +821,40 @@ class MasterOrchestratorAgent:
             Args:
                 specific_url: The specific URL to analyze for community information
                 current_community_data: JSON string of current accumulated community data
+                force_rescrape: Whether to bypass URL deduplication (for validation-driven retries)
 
             Returns:
                 CommunityInformation with extracted community information (incremental)
             """
+            # Check for duplicate URL unless forced by validation
+            if not force_rescrape and specific_url in self.processed_urls:
+                logger.info(f"[MasterOrchestratorAgent] Tool: Skipping already processed URL: {specific_url}")
+                # Return empty community data structure to maintain tool contract
+                return CommunityInformation(
+                    name="", overview="", url=specific_url, 
+                    fees=[], floor_plans=[], community_amenities=[], community_pages=[]
+                )
+
             logger.info(f"[MasterOrchestratorAgent] Tool: Starting community overview extraction for delegated URL: {
                         specific_url}")
             result = await self.community_overview_agent.extract_community_info(specific_url)
+            
+            # Mark URL as processed
+            self.processed_urls.add(specific_url)
+            logger.info(f"[MasterOrchestratorAgent] Tool: Marked URL as processed: {specific_url}")
+            
             logger.info(
                 "[MasterOrchestratorAgent] Tool: Community overview extraction completed")
-            
+
             # Convert extraction result to CommunityInformation format for merging
             community_data = result.community_info
-            
-            logger.info(f"[MasterOrchestratorAgent] Tool: Converted community overview with {len(community_data.fees)} fees, {len(community_data.community_amenities)} amenities, {len(community_data.community_pages)} pages")
+
+            logger.info(f"[MasterOrchestratorAgent] Tool: Converted community overview with {len(community_data.fees)} fees, {
+                        len(community_data.community_amenities)} amenities, {len(community_data.community_pages)} pages")
             return community_data
 
         @self.agent.tool
-        async def extract_fees_from_url(ctx, specific_url: str, current_community_data: str = "{}") -> CommunityInformation:
+        async def extract_fees_from_url(ctx, specific_url: str, current_community_data: str = "{}", force_rescrape: bool = False) -> CommunityInformation:
             """Extract fees and pricing information from a specific URL and merge with existing data.
 
             This tool analyzes a single specific URL that contains fee information
@@ -946,30 +863,46 @@ class MasterOrchestratorAgent:
             Args:
                 specific_url: The specific URL to analyze for fees
                 current_community_data: JSON string of current accumulated community data
+                force_rescrape: Whether to bypass URL deduplication (for validation-driven retries)
 
             Returns:
                 CommunityInformation with discovered fees (incremental)
             """
+            # Check for duplicate URL unless forced by validation
+            if not force_rescrape and specific_url in self.processed_urls:
+                logger.info(f"[MasterOrchestratorAgent] Tool: Skipping already processed URL: {specific_url}")
+                # Return empty community data structure to maintain tool contract
+                return CommunityInformation(
+                    name="", overview="", url=specific_url,
+                    fees=[], floor_plans=[], community_amenities=[], community_pages=[]
+                )
+
             logger.info(f"[MasterOrchestratorAgent] Tool: Starting fee extraction for delegated URL: {
                         specific_url}")
             result = await self.fee_specialist.extract_fees(specific_url)
+            
+            # Mark URL as processed
+            self.processed_urls.add(specific_url)
+            logger.info(f"[MasterOrchestratorAgent] Tool: Marked URL as processed: {specific_url}")
+            
             logger.info(
                 f"[MasterOrchestratorAgent] Tool: Fee extraction completed, found {
                     len(result.fees_found)} fees"
             )
-            
+
             # Convert extraction result to CommunityInformation format for merging
             community_data = CommunityInformation(
                 name="",  # Will be filled by community overview
-                overview="",  # Will be filled by community overview  
+                overview="",  # Will be filled by community overview
                 url=specific_url,
                 fees=result.fees_found,
                 floor_plans=[],
                 community_amenities=[],
                 community_pages=[]
             )
-            
-            logger.info(f"[MasterOrchestratorAgent] Tool: Converted to community format with {len(community_data.fees)} fees")
+
+            logger.info(f"[MasterOrchestratorAgent] Tool: Converted to community format with {
+                        len(community_data.fees)} fees")
             return community_data
 
         @self.agent.tool
@@ -1009,7 +942,7 @@ class MasterOrchestratorAgent:
 
                 logger.info(f"[MasterOrchestratorAgent] Tool: {
                             merge_type} data merge completed")
-                return json.dumps(merged_data, indent=2)
+                return json.dumps(merged_data)
 
             except Exception as e:
                 logger.error(
@@ -1040,62 +973,69 @@ class MasterOrchestratorAgent:
             """
             logger.info(
                 f"[MasterOrchestratorAgent] Tool: Starting data validation (iteration {current_iteration}/{self.max_validation_iterations})")
-            
+
             # Check if we've reached max iterations
             if current_iteration >= self.max_validation_iterations:
-                logger.warning(f"[MasterOrchestratorAgent] Tool: Max validation iterations ({self.max_validation_iterations}) reached. Forcing validation to pass to prevent infinite loops.")
+                logger.warning(f"[MasterOrchestratorAgent] Tool: Max validation iterations ({
+                               self.max_validation_iterations}) reached. Forcing validation to pass to prevent infinite loops.")
                 # Return a passing validation to stop the loop
                 return ValidationReport(
                     completeness_score=80.0,  # Force acceptable score
                     critical_fields_missing=[],
                     incomplete_fields=[],
                     quality_issues=[],
-                    specific_feedback=[f"Max validation iterations ({self.max_validation_iterations}) reached - accepting current data"],
+                    specific_feedback=[f"Max validation iterations ({
+                        self.max_validation_iterations}) reached - accepting current data"],
                     retry_recommendations=[],
                     validation_passed=True,
-                    validation_summary=f"Validation completed after {current_iteration} iterations. Max iteration limit reached - extraction complete."
+                    validation_summary=f"Validation completed after {
+                        current_iteration} iterations. Max iteration limit reached - extraction complete."
                 )
-            
+
             # Log previous score for comparison
             if previous_validation_score > 0:
-                logger.info(f"[MasterOrchestratorAgent] Tool: Previous validation score: {previous_validation_score}%")
-            
+                logger.info(f"[MasterOrchestratorAgent] Tool: Previous validation score: {
+                            previous_validation_score}%")
+
             # Parse JSON string back to CommunityInformation model
             import json
 
             community_data_dict = json.loads(community_data_json)
             community_data = CommunityInformation(**community_data_dict)
-            
+
             # Use stored target data if available
             target_data = getattr(self, 'target_data', {})
             if target_data:
-                logger.info(f"[MasterOrchestratorAgent] Tool: Using existing target data for validation context")
-            
+                logger.info(
+                    f"[MasterOrchestratorAgent] Tool: Using existing target data for validation context")
+
             # Log data summary before validation
             logger.info(f"[MasterOrchestratorAgent] Tool: Validating data with {len(community_data.fees)} fees, "
-                       f"{len(community_data.floor_plans)} floor plans, "
-                       f"{len(community_data.community_amenities)} amenities, "
-                       f"{len(community_data.community_pages)} pages")
-            
+                        f"{len(community_data.floor_plans)} floor plans, "
+                        f"{len(community_data.community_amenities)} amenities, "
+                        f"{len(community_data.community_pages)} pages")
+
             result = await self.validation_agent.validate_extraction(community_data, target_data)
-            
+
             # Log score comparison
             current_score = result.completeness_score
             logger.info(
-                f"[MasterOrchestratorAgent] Tool: Data validation completed with {current_score}% score"
+                f"[MasterOrchestratorAgent] Tool: Data validation completed with {
+                    current_score}% score"
             )
-            
+
             if previous_validation_score > 0:
                 score_change = current_score - previous_validation_score
                 if score_change > 0:
                     logger.info(f"[MasterOrchestratorAgent] Tool: ✅ SCORE IMPROVED by {score_change:.1f}% "
-                               f"({previous_validation_score}% → {current_score}%)")
+                                f"({previous_validation_score}% → {current_score}%)")
                 elif score_change < 0:
                     logger.warning(f"[MasterOrchestratorAgent] Tool: ⚠️ SCORE DECREASED by {abs(score_change):.1f}% "
-                                  f"({previous_validation_score}% → {current_score}%) - DATA MAY HAVE BEEN LOST!")
+                                   f"({previous_validation_score}% → {current_score}%) - DATA MAY HAVE BEEN LOST!")
                 else:
-                    logger.info(f"[MasterOrchestratorAgent] Tool: 📊 SCORE UNCHANGED at {current_score}%")
-            
+                    logger.info(f"[MasterOrchestratorAgent] Tool: 📊 SCORE UNCHANGED at {
+                                current_score}%")
+
             return result
 
     def _intelligent_merge(self, current_data: dict, new_data: dict, merge_type: str) -> dict:
@@ -1110,11 +1050,13 @@ class MasterOrchestratorAgent:
             Merged data dictionary
         """
         if not current_data:
-            logger.info(f"[MasterOrchestratorAgent] Merge: Starting with new data (no existing data)")
+            logger.info(
+                f"[MasterOrchestratorAgent] Merge: Starting with new data (no existing data)")
             return new_data
 
         if not new_data:
-            logger.info(f"[MasterOrchestratorAgent] Merge: No new data to merge, returning existing data")
+            logger.info(
+                f"[MasterOrchestratorAgent] Merge: No new data to merge, returning existing data")
             return current_data
 
         # Log merge summary
@@ -1122,15 +1064,16 @@ class MasterOrchestratorAgent:
         current_plans = len(current_data.get('floor_plans', []))
         current_amenities = len(current_data.get('community_amenities', []))
         current_pages = len(current_data.get('community_pages', []))
-        
+
         new_fees = len(new_data.get('fees', []))
         new_plans = len(new_data.get('floor_plans', []))
         new_amenities = len(new_data.get('community_amenities', []))
         new_pages = len(new_data.get('community_pages', []))
-        
+
         logger.info(f"[MasterOrchestratorAgent] Merge: Combining data - "
-                   f"Current: {current_fees} fees, {current_plans} floor plans, {current_amenities} amenities, {current_pages} pages | "
-                   f"New: {new_fees} fees, {new_plans} floor plans, {new_amenities} amenities, {new_pages} pages")
+                    f"Current: {current_fees} fees, {current_plans} floor plans, {
+                        current_amenities} amenities, {current_pages} pages | "
+                    f"New: {new_fees} fees, {new_plans} floor plans, {new_amenities} amenities, {new_pages} pages")
 
         merged = current_data.copy()
 
@@ -1202,9 +1145,9 @@ class MasterOrchestratorAgent:
         final_plans = len(merged.get('floor_plans', []))
         final_amenities = len(merged.get('community_amenities', []))
         final_pages = len(merged.get('community_pages', []))
-        
+
         logger.info(f"[MasterOrchestratorAgent] Merge: Final result - "
-                   f"{final_fees} fees, {final_plans} floor plans, {final_amenities} amenities, {final_pages} pages")
+                    f"{final_fees} fees, {final_plans} floor plans, {final_amenities} amenities, {final_pages} pages")
 
         return merged
 
@@ -1228,7 +1171,7 @@ class MasterOrchestratorAgent:
         start_time = time.time()
         agents_used = []
         total_retry_count = 0
-        
+
         # Store target data for validation tool and max iterations
         self.target_data = target_data or {}
         self.max_validation_iterations = max_validation_iterations
